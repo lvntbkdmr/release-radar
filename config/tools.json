@@ -1,0 +1,80 @@
+{
+  "checkIntervalHours": 6,
+  "tools": [
+    {
+      "name": "VSCode",
+      "type": "custom",
+      "customFetcher": "vscode"
+    },
+    {
+      "name": "Claude Code CLI",
+      "type": "custom",
+      "customFetcher": "claude-cli"
+    },
+    {
+      "name": "Ninja",
+      "type": "github",
+      "repo": "ninja-build/ninja"
+    },
+    {
+      "name": "CMake",
+      "type": "custom",
+      "customFetcher": "cmake"
+    },
+    {
+      "name": "Git",
+      "type": "github",
+      "repo": "git-for-windows/git"
+    },
+    {
+      "name": "Clangd",
+      "type": "github",
+      "repo": "clangd/clangd"
+    },
+    {
+      "name": "Wezterm",
+      "type": "github",
+      "repo": "wezterm/wezterm"
+    },
+    {
+      "name": "Ralphy",
+      "type": "npm",
+      "package": "ralphy-cli"
+    },
+    {
+      "name": "vscode-cpptools",
+      "type": "github",
+      "repo": "microsoft/vscode-cpptools"
+    },
+    {
+      "name": "vscode-clangd",
+      "type": "github",
+      "repo": "clangd/vscode-clangd"
+    },
+    {
+      "name": "Claude Code VSCode",
+      "type": "vscode-marketplace",
+      "extensionId": "anthropic.claude-code"
+    },
+    {
+      "name": "CMake Tools",
+      "type": "github",
+      "repo": "microsoft/vscode-cmake-tools"
+    },
+    {
+      "name": "Roo Code",
+      "type": "github",
+      "repo": "RooCodeInc/Roo-Code"
+    },
+    {
+      "name": "Atlascode",
+      "type": "github",
+      "repo": "atlassian/atlascode"
+    },
+    {
+      "name": "Zed",
+      "type": "github",
+      "repo": "zed-industries/zed"
+    }
+  ]
+}
