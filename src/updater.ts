@@ -11,7 +11,7 @@ export interface GitHubReleasePayload {
 }
 
 export function parseReleaseEvent(payload: GitHubReleasePayload): string | null {
-  // GitHub sends 'published' for new releases and 'released' for made-available releases
+  // GitHub sends 'published' for new releases and 'released' when made available
   const validActions = ['published', 'released'];
   if (!validActions.includes(payload.action) || !payload.release?.tag_name) {
     return null;
