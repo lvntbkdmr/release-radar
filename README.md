@@ -124,6 +124,8 @@ pm2 save
 |---------|-------------|
 | `/check` | Manually trigger version check |
 | `/status` | Show all tracked versions |
+| `/interval` | Show current check interval |
+| `/setinterval <hours>` | Set check interval (1-24 hours) |
 
 ## Project Structure
 

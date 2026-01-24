@@ -89,14 +89,22 @@ pm2 save
 |---------|-------------|
 | `/check` | Manually trigger version check for all tools |
 | `/status` | Show currently tracked versions |
+| `/interval` | Show current check interval |
+| `/setinterval <hours>` | Set check interval (1-24 hours) |
 
 ## Configuration
 
 ### Change Check Interval
+**Via Telegram (recommended):**
+```
+/setinterval 12
+```
+
+**Via config file:**
 Edit `config/tools.json`:
 ```json
 {
-  "checkIntervalHours": 6,  // Change this value
+  "checkIntervalHours": 6,
   "tools": [...]
 }
 ```
