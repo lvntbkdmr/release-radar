@@ -1,5 +1,5 @@
 {
-  "checkIntervalHours": 6,
+  "checkIntervalHours": 1,
   "tools": [
     {
       "name": "VSCode",

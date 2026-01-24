@@ -1,19 +1,46 @@
 {
-  "name": "releaseradar",
+  "name": "@lvnt/release-radar",
   "version": "1.0.0",
   "description": "Monitor tool versions and notify via Telegram when updates are detected",
   "main": "dist/index.js",
+  "bin": {
+    "release-radar": "bin/release-radar.js"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "release",
+    "monitor",
+    "version",
+    "telegram",
+    "notification",
+    "github",
+    "npm",
+    "vscode"
+  ],
+  "author": "lvnt",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lvntbkdmr/release-radar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lvntbkdmr/release-radar/issues"
+  },
+  "homepage": "https://github.com/lvntbkdmr/release-radar#readme",
+  "files": [
+    "dist",
+    "bin",
+    "config",
+    ".env.example"
+  ],
   "dependencies": {
     "dotenv": "^17.2.3",
     "node-cron": "^4.2.1",
