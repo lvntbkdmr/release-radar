@@ -48,25 +48,42 @@ describe('custom fetchers', () => {
   });
 
   describe('fetchCMakeVersion', () => {
-    it('parses version from HTML directory listing', async () => {
-      const html = `
-        <a href="cmake-3.28.0-linux-x86_64.tar.gz">cmake-3.28.0-linux-x86_64.tar.gz</a>
-        <a href="cmake-3.28.0-windows-x86_64.msi">cmake-3.28.0-windows-x86_64.msi</a>
-      `;
+    it('extracts version from JSON endpoint', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        text: () => Promise.resolve(html)
+        json: () => Promise.resolve({ version: { string: '3.31.0' } })
       });
 
       const version = await fetchCMakeVersion();
-      expect(version).toBe('3.28.0');
+      expect(version).toBe('3.31.0');
+      expect(fetch).toHaveBeenCalledWith(
+        'https://cmake.org/files/LatestRelease/cmake-latest-files-v1.json'
+      );
+    });
+
+    it('falls back to HTML and returns newest (last) version', async () => {
+      const html = `
+        <a href="cmake-3.28.0-linux-x86_64.tar.gz">cmake-3.28.0-linux-x86_64.tar.gz</a>
+        <a href="cmake-3.31.0-linux-x86_64.tar.gz">cmake-3.31.0-linux-x86_64.tar.gz</a>
+      `;
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: false, status: 404 })
+        .mockResolvedValueOnce({
+          ok: true,
+          text: () => Promise.resolve(html)
+        });
+
+      const version = await fetchCMakeVersion();
+      expect(version).toBe('3.31.0');
     });
 
     it('throws when no version found in listing', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve('<html>empty</html>')
-      });
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: false, status: 404 })
+        .mockResolvedValueOnce({
+          ok: true,
+          text: () => Promise.resolve('<html>empty</html>')
+        });
 
       await expect(fetchCMakeVersion())
         .rejects.toThrow('Could not parse CMake version from directory listing');

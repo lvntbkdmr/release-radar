@@ -41,18 +41,35 @@ export async function fetchClaudeCodeCLI(): Promise<string> {
 }
 
 export async function fetchCMakeVersion(): Promise<string> {
-  const response = await fetch('https://cmake.org/files/LatestRelease/');
+  const jsonUrl = 'https://cmake.org/files/LatestRelease/cmake-latest-files-v1.json';
+  const fallbackUrl = 'https://cmake.org/files/LatestRelease/';
+
+  // Try JSON endpoint first
+  try {
+    const response = await fetch(jsonUrl);
+    if (response.ok) {
+      const data = await response.json() as { version: { string: string } };
+      return data.version.string;
+    }
+  } catch {
+    // Fall through to HTML parsing
+  }
+
+  // Fallback: parse HTML directory listing (items are oldest to newest)
+  const response = await fetch(fallbackUrl);
 
   if (!response.ok) {
     throw new Error(`CMake fetch error: ${response.status} ${response.statusText}`);
   }
 
   const html = await response.text();
-  const match = html.match(/cmake-(\d+\.\d+\.\d+)/);
+  const matches = html.matchAll(/cmake-(\d+\.\d+\.\d+)/g);
+  const versions = [...matches].map(m => m[1]);
 
-  if (!match) {
+  if (versions.length === 0) {
     throw new Error('Could not parse CMake version from directory listing');
   }
 
-  return match[1];
+  // Return last match (newest version)
+  return versions[versions.length - 1];
 }
