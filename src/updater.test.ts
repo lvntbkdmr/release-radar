@@ -36,7 +36,17 @@ describe('parseReleaseEvent', () => {
     expect(parseReleaseEvent(payload)).toBe('1.2.0');
   });
 
-  it('returns null for non-published action', () => {
+  it('returns version for release.released event', () => {
+    const payload = {
+      action: 'released',
+      release: {
+        tag_name: 'v1.2.0'
+      }
+    };
+    expect(parseReleaseEvent(payload)).toBe('1.2.0');
+  });
+
+  it('returns null for other actions', () => {
     const payload = {
       action: 'created',
       release: {
