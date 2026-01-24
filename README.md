@@ -165,7 +165,14 @@ ReleaseRadar includes an optional auto-updater that receives GitHub webhooks and
    pm2 save
    ```
 
-When you publish a new release, the updater will automatically run `npm update -g @lvnt/release-radar` and restart the main service.
+When you publish a new release, the updater will automatically run `sudo npm update -g @lvnt/release-radar` and restart the main service.
+
+**Note:** If you installed npm with sudo, configure passwordless sudo for npm:
+```bash
+sudo visudo
+# Add this line:
+# yourusername ALL=(ALL) NOPASSWD: /usr/bin/npm
+```
 
 ## Project Structure
 
