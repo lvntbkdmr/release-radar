@@ -46,6 +46,10 @@ export function executeUpdate(): Promise<UpdateResult> {
       stdio: 'inherit'
     });
 
+    npmProcess.on('error', (err) => {
+      resolve({ success: false, error: `npm process error: ${err.message}` });
+    });
+
     npmProcess.on('close', (code) => {
       if (code !== 0) {
         resolve({ success: false, error: `npm update failed with code ${code}` });
@@ -54,6 +58,10 @@ export function executeUpdate(): Promise<UpdateResult> {
 
       const pm2Process = spawn('pm2', ['restart', 'release-radar'], {
         stdio: 'inherit'
+      });
+
+      pm2Process.on('error', (err) => {
+        resolve({ success: false, error: `pm2 process error: ${err.message}` });
       });
 
       pm2Process.on('close', (pm2Code) => {
