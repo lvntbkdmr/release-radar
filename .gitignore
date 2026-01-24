@@ -3,3 +3,7 @@ dist/
 .env
 data/versions.json
 .worktrees/
+
+# CLI
+cli/node_modules/
+cli/dist/
