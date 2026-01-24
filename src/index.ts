@@ -9,6 +9,7 @@ import { Storage } from './storage.js';
 import { Notifier } from './notifier.js';
 import { Checker } from './checker.js';
 import { generateVersionsJson } from './versions-generator.js';
+import { CliPublisher } from './cli-publisher.js';
 import type { Config, DownloadsConfig } from './types.js';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -36,6 +37,7 @@ const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 const storage = new Storage('./data/versions.json');
 const notifier = new Notifier(bot, CHAT_ID);
 const checker = new Checker(configData.tools, storage, notifier);
+const cliPublisher = new CliPublisher(downloadsConfig);
 
 // Track scheduled task for rescheduling
 let scheduledTask: ScheduledTask | null = null;
@@ -62,8 +64,17 @@ function scheduleChecks(intervalHours: number): void {
   scheduledTask = cron.schedule(cronExpression, async () => {
     console.log(`[${new Date().toISOString()}] Running scheduled check`);
     lastCheckTime = new Date();
-    await checker.checkAll();
+    const result = await checker.checkAll();
     nextCheckTime = calculateNextCheckTime(intervalHours);
+
+    // Auto-publish CLI if updates were detected
+    if (result.hasUpdates && cliPublisher.isConfigured()) {
+      const state = storage.load();
+      const publishResult = await cliPublisher.publish(state.versions);
+      if (publishResult.success) {
+        await bot.sendMessage(CHAT_ID, `📦 CLI published: v${publishResult.version}`);
+      }
+    }
   });
   console.log(`Scheduled checks every ${intervalHours} hours`);
 }
@@ -74,8 +85,20 @@ bot.onText(/\/check/, async (msg) => {
 
   await bot.sendMessage(CHAT_ID, 'Checking for updates...');
   lastCheckTime = new Date();
-  await checker.checkAll();
+  const result = await checker.checkAll();
   nextCheckTime = calculateNextCheckTime(configData.checkIntervalHours);
+
+  // Auto-publish CLI if updates were detected
+  if (result.hasUpdates && cliPublisher.isConfigured()) {
+    const state = storage.load();
+    const publishResult = await cliPublisher.publish(state.versions);
+    if (publishResult.success) {
+      await bot.sendMessage(CHAT_ID, `📦 CLI published: v${publishResult.version}`);
+    } else {
+      await bot.sendMessage(CHAT_ID, `⚠️ CLI publish failed: ${publishResult.error}`);
+    }
+  }
+
   await bot.sendMessage(CHAT_ID, 'Check complete.');
 });
 
@@ -155,13 +178,32 @@ bot.onText(/\/generate/, async (msg) => {
   const state = storage.load();
   const versionsJson = generateVersionsJson(state.versions, downloadsConfig);
 
-  const outputPath = './data/versions.json';
+  const outputPath = './data/cli-versions.json';
   writeFileSync(outputPath, JSON.stringify(versionsJson, null, 2));
 
   await bot.sendMessage(
     CHAT_ID,
     `Generated versions.json with ${versionsJson.tools.length} tools.\nPath: ${outputPath}`
   );
+});
+
+bot.onText(/\/publishcli/, async (msg) => {
+  if (msg.chat.id.toString() !== CHAT_ID) return;
+
+  if (!cliPublisher.isConfigured()) {
+    await bot.sendMessage(CHAT_ID, 'CLI publisher not configured. Check downloads.json and cli/ directory.');
+    return;
+  }
+
+  await bot.sendMessage(CHAT_ID, 'Publishing CLI...');
+  const state = storage.load();
+  const result = await cliPublisher.publish(state.versions);
+
+  if (result.success) {
+    await bot.sendMessage(CHAT_ID, `✅ CLI published: v${result.version}`);
+  } else {
+    await bot.sendMessage(CHAT_ID, `❌ CLI publish failed: ${result.error}`);
+  }
 });
 
 // Start scheduled checks

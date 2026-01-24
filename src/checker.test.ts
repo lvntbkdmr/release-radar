@@ -88,4 +88,26 @@ describe('Checker', () => {
     expect(mockNotifier.sendBatchedUpdates).toHaveBeenCalledWith([]);
     expect(mockStorage.setVersion).not.toHaveBeenCalled();
   });
+
+  it('returns hasUpdates true when updates found', async () => {
+    mockStorage.getVersion.mockReturnValueOnce('1.11.1').mockReturnValueOnce('2.43.0');
+    vi.mocked(fetchVersion)
+      .mockResolvedValueOnce('1.12.0')
+      .mockResolvedValueOnce('2.43.0');
+
+    const result = await checker.checkAll();
+
+    expect(result.hasUpdates).toBe(true);
+    expect(result.updateCount).toBe(1);
+  });
+
+  it('returns hasUpdates false when no updates', async () => {
+    mockStorage.getVersion.mockReturnValue('1.12.0');
+    vi.mocked(fetchVersion).mockResolvedValue('1.12.0');
+
+    const result = await checker.checkAll();
+
+    expect(result.hasUpdates).toBe(false);
+    expect(result.updateCount).toBe(0);
+  });
 });

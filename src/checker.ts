@@ -11,7 +11,7 @@ export class Checker {
     private notifier: Notifier
   ) {}
 
-  async checkAll(): Promise<void> {
+  async checkAll(): Promise<{ hasUpdates: boolean; updateCount: number }> {
     const updates: UpdateInfo[] = [];
     const failures: FailureInfo[] = [];
 
@@ -35,5 +35,7 @@ export class Checker {
 
     await this.notifier.sendBatchedUpdates(updates);
     await this.notifier.sendBatchedFailures(failures);
+
+    return { hasUpdates: updates.length > 0, updateCount: updates.length };
   }
 }
