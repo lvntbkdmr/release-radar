@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { verifySignature } from './updater.js';
+import { verifySignature, parseReleaseEvent } from './updater.js';
 
 describe('verifySignature', () => {
   const secret = 'test-secret';
@@ -17,5 +17,48 @@ describe('verifySignature', () => {
 
   it('returns false for missing signature', () => {
     expect(verifySignature(payload, '', secret)).toBe(false);
+  });
+});
+
+describe('parseReleaseEvent', () => {
+  it('returns version for release.published event', () => {
+    const payload = {
+      action: 'published',
+      release: {
+        tag_name: 'v1.2.0'
+      }
+    };
+    expect(parseReleaseEvent(payload)).toBe('1.2.0');
+  });
+
+  it('returns null for non-published action', () => {
+    const payload = {
+      action: 'created',
+      release: {
+        tag_name: 'v1.2.0'
+      }
+    };
+    expect(parseReleaseEvent(payload)).toBeNull();
+  });
+
+  it('returns null for missing release', () => {
+    const payload = { action: 'published' };
+    expect(parseReleaseEvent(payload)).toBeNull();
+  });
+
+  it('strips v prefix from tag', () => {
+    const payload = {
+      action: 'published',
+      release: { tag_name: 'v2.0.0' }
+    };
+    expect(parseReleaseEvent(payload)).toBe('2.0.0');
+  });
+
+  it('handles tag without v prefix', () => {
+    const payload = {
+      action: 'published',
+      release: { tag_name: '2.0.0' }
+    };
+    expect(parseReleaseEvent(payload)).toBe('2.0.0');
   });
 });
