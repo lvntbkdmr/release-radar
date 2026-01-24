@@ -1,0 +1,17 @@
+{
+  "Ninja": {
+    "displayName": "Ninja",
+    "downloadUrl": "github.com/ninja-build/ninja/releases/download/v{{VERSION}}/ninja-linux.zip",
+    "filename": "ninja-{{VERSION}}-linux.zip"
+  },
+  "CMake": {
+    "displayName": "CMake",
+    "downloadUrl": "github.com/Kitware/CMake/releases/download/v{{VERSION}}/cmake-{{VERSION}}-linux-x86_64.tar.gz",
+    "filename": "cmake-{{VERSION}}-linux-x86_64.tar.gz"
+  },
+  "Git": {
+    "displayName": "Git for Windows",
+    "downloadUrl": "github.com/git-for-windows/git/releases/download/v{{VERSION}}.windows.1/Git-{{VERSION}}-64-bit.exe",
+    "filename": "Git-{{VERSION}}-64-bit.exe"
+  }
+}
