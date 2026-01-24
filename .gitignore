@@ -2,3 +2,4 @@ node_modules/
 dist/
 .env
 data/versions.json
+.worktrees/
