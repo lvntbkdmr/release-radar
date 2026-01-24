@@ -109,7 +109,7 @@ describe('executeUpdate', () => {
     const result = await executeUpdate();
 
     expect(result.success).toBe(true);
-    expect(mockSpawn).toHaveBeenCalledWith('npm', ['update', '-g', '@lvnt/release-radar'], expect.any(Object));
+    expect(mockSpawn).toHaveBeenCalledWith('sudo', ['npm', 'update', '-g', '@lvnt/release-radar'], expect.any(Object));
     expect(mockSpawn).toHaveBeenCalledWith('pm2', ['restart', 'release-radar'], expect.any(Object));
   });
 

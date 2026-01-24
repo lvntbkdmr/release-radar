@@ -44,7 +44,8 @@ export interface UpdateResult {
 
 export function executeUpdate(): Promise<UpdateResult> {
   return new Promise((resolve) => {
-    const npmProcess = spawn('npm', ['update', '-g', '@lvnt/release-radar'], {
+    // Use sudo for global npm update (required when npm was installed with sudo)
+    const npmProcess = spawn('sudo', ['npm', 'update', '-g', '@lvnt/release-radar'], {
       stdio: 'inherit'
     });
 
