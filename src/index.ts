@@ -30,15 +30,31 @@ const checker = new Checker(configData.tools, storage, notifier);
 
 // Track scheduled task for rescheduling
 let scheduledTask: ScheduledTask | null = null;
+let lastCheckTime: Date | null = null;
+let nextCheckTime: Date | null = null;
+
+function calculateNextCheckTime(intervalHours: number): Date {
+  const now = new Date();
+  const next = new Date(now);
+  next.setMinutes(0, 0, 0);
+  next.setHours(Math.ceil(now.getHours() / intervalHours) * intervalHours);
+  if (next <= now) {
+    next.setHours(next.getHours() + intervalHours);
+  }
+  return next;
+}
 
 function scheduleChecks(intervalHours: number): void {
   if (scheduledTask) {
     scheduledTask.stop();
   }
+  nextCheckTime = calculateNextCheckTime(intervalHours);
   const cronExpression = `0 */${intervalHours} * * *`;
   scheduledTask = cron.schedule(cronExpression, async () => {
     console.log(`[${new Date().toISOString()}] Running scheduled check`);
+    lastCheckTime = new Date();
     await checker.checkAll();
+    nextCheckTime = calculateNextCheckTime(intervalHours);
   });
   console.log(`Scheduled checks every ${intervalHours} hours`);
 }
@@ -48,7 +64,9 @@ bot.onText(/\/check/, async (msg) => {
   if (msg.chat.id.toString() !== CHAT_ID) return;
 
   await bot.sendMessage(CHAT_ID, 'Checking for updates...');
+  lastCheckTime = new Date();
   await checker.checkAll();
+  nextCheckTime = calculateNextCheckTime(configData.checkIntervalHours);
   await bot.sendMessage(CHAT_ID, 'Check complete.');
 });
 
@@ -60,9 +78,28 @@ bot.onText(/\/status/, async (msg) => {
     .map(([name, version]) => `${name}: ${version}`)
     .sort();
 
-  const message = lines.length > 0
+  let message = lines.length > 0
     ? lines.join('\n')
     : 'No versions tracked yet. Run /check first.';
+
+  // Add timing info
+  message += '\n\n---';
+  if (lastCheckTime) {
+    const ago = Math.round((Date.now() - lastCheckTime.getTime()) / 60000);
+    message += `\nLast check: ${ago} min ago`;
+  } else {
+    message += '\nLast check: not yet';
+  }
+  if (nextCheckTime) {
+    const mins = Math.round((nextCheckTime.getTime() - Date.now()) / 60000);
+    if (mins > 0) {
+      const hours = Math.floor(mins / 60);
+      const remainingMins = mins % 60;
+      message += `\nNext check: in ${hours > 0 ? hours + 'h ' : ''}${remainingMins}m`;
+    } else {
+      message += '\nNext check: soon';
+    }
+  }
 
   await bot.sendMessage(CHAT_ID, message);
 });
