@@ -144,3 +144,29 @@ pm2 logs release-radar | grep "Failed"
 | `data/versions.json` | Stored version state |
 | `.env` | Telegram credentials |
 | `~/.pm2/logs/release-radar-*.log` | pm2 logs |
+
+## Auto-Updater Service
+
+### Check Status
+```bash
+pm2 status release-radar-updater
+```
+
+### View Logs
+```bash
+pm2 logs release-radar-updater --lines 50 --nostream
+```
+
+### Start/Stop/Restart
+```bash
+pm2 start release-radar-updater
+pm2 stop release-radar-updater
+pm2 restart release-radar-updater
+```
+
+### First-Time Setup
+```bash
+# Ensure GITHUB_WEBHOOK_SECRET is set in .env
+pm2 start release-radar-updater --name release-radar-updater
+pm2 save
+```

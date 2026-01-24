@@ -140,6 +140,33 @@ Edit `config/tools.json` to add/remove tools:
 | `/interval` | Show current check interval |
 | `/setinterval <hours>` | Set check interval (1-24 hours) |
 
+## Auto-Updater (Optional)
+
+ReleaseRadar includes an optional auto-updater that receives GitHub webhooks and automatically updates itself when you publish a new version.
+
+### Setup
+
+1. Add to your `.env`:
+   ```env
+   GITHUB_WEBHOOK_SECRET=your_secret_here
+   UPDATER_PORT=9000
+   ```
+
+2. Configure GitHub webhook:
+   - Go to your repo's Settings → Webhooks → Add webhook
+   - Payload URL: `https://your-domain.com/webhook`
+   - Content type: `application/json`
+   - Secret: same as `GITHUB_WEBHOOK_SECRET`
+   - Events: Select "Releases" only
+
+3. Start the updater with pm2:
+   ```bash
+   pm2 start release-radar-updater --name release-radar-updater
+   pm2 save
+   ```
+
+When you publish a new release, the updater will automatically run `npm update -g @lvnt/release-radar` and restart the main service.
+
 ## Project Structure
 
 ```
