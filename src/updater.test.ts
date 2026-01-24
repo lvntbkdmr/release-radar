@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { verifySignature, parseReleaseEvent } from './updater.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { verifySignature, parseReleaseEvent, executeUpdate } from './updater.js';
+import { spawn } from 'child_process';
+
+vi.mock('child_process', () => ({
+  spawn: vi.fn()
+}));
 
 describe('verifySignature', () => {
   const secret = 'test-secret';
@@ -60,5 +65,59 @@ describe('parseReleaseEvent', () => {
       release: { tag_name: '2.0.0' }
     };
     expect(parseReleaseEvent(payload)).toBe('2.0.0');
+  });
+});
+
+describe('executeUpdate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('runs npm update then pm2 restart on success', async () => {
+    const mockSpawn = vi.mocked(spawn);
+
+    // Mock npm update success
+    const npmProcess = {
+      on: vi.fn((event, cb) => {
+        if (event === 'close') cb(0);
+        return npmProcess;
+      })
+    };
+
+    // Mock pm2 restart success
+    const pm2Process = {
+      on: vi.fn((event, cb) => {
+        if (event === 'close') cb(0);
+        return pm2Process;
+      })
+    };
+
+    mockSpawn
+      .mockReturnValueOnce(npmProcess as any)
+      .mockReturnValueOnce(pm2Process as any);
+
+    const result = await executeUpdate();
+
+    expect(result.success).toBe(true);
+    expect(mockSpawn).toHaveBeenCalledWith('npm', ['update', '-g', '@lvnt/release-radar'], expect.any(Object));
+    expect(mockSpawn).toHaveBeenCalledWith('pm2', ['restart', 'release-radar'], expect.any(Object));
+  });
+
+  it('returns failure if npm update fails', async () => {
+    const mockSpawn = vi.mocked(spawn);
+
+    const npmProcess = {
+      on: vi.fn((event, cb) => {
+        if (event === 'close') cb(1);
+        return npmProcess;
+      })
+    };
+
+    mockSpawn.mockReturnValueOnce(npmProcess as any);
+
+    const result = await executeUpdate();
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('npm update failed with code 1');
   });
 });

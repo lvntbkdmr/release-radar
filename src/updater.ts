@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { spawn } from 'child_process';
 
 export interface GitHubReleasePayload {
   action: string;
@@ -30,4 +31,36 @@ export function verifySignature(payload: string, signature: string, secret: stri
   } catch {
     return false;
   }
+}
+
+export interface UpdateResult {
+  success: boolean;
+  error?: string;
+}
+
+export function executeUpdate(): Promise<UpdateResult> {
+  return new Promise((resolve) => {
+    const npmProcess = spawn('npm', ['update', '-g', '@lvnt/release-radar'], {
+      stdio: 'inherit'
+    });
+
+    npmProcess.on('close', (code) => {
+      if (code !== 0) {
+        resolve({ success: false, error: `npm update failed with code ${code}` });
+        return;
+      }
+
+      const pm2Process = spawn('pm2', ['restart', 'release-radar'], {
+        stdio: 'inherit'
+      });
+
+      pm2Process.on('close', (pm2Code) => {
+        if (pm2Code !== 0) {
+          resolve({ success: false, error: `pm2 restart failed with code ${pm2Code}` });
+        } else {
+          resolve({ success: true });
+        }
+      });
+    });
+  });
 }
