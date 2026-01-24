@@ -8,7 +8,8 @@ import { readFileSync, writeFileSync } from 'fs';
 import { Storage } from './storage.js';
 import { Notifier } from './notifier.js';
 import { Checker } from './checker.js';
-import type { Config } from './types.js';
+import { generateVersionsJson } from './versions-generator.js';
+import type { Config, DownloadsConfig } from './types.js';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -21,6 +22,14 @@ if (!BOT_TOKEN || !CHAT_ID) {
 
 // Load config
 let configData: Config = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'));
+
+const DOWNLOADS_PATH = './config/downloads.json';
+let downloadsConfig: DownloadsConfig = {};
+try {
+  downloadsConfig = JSON.parse(readFileSync(DOWNLOADS_PATH, 'utf-8'));
+} catch {
+  console.log('No downloads.json found, CLI generation disabled');
+}
 
 // Initialize components
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
@@ -133,6 +142,26 @@ bot.onText(/\/setinterval(?:\s+(\d+))?/, async (msg, match) => {
   scheduleChecks(hours);
 
   await bot.sendMessage(CHAT_ID, `Check interval updated to every ${hours} hours`);
+});
+
+bot.onText(/\/generate/, async (msg) => {
+  if (msg.chat.id.toString() !== CHAT_ID) return;
+
+  if (Object.keys(downloadsConfig).length === 0) {
+    await bot.sendMessage(CHAT_ID, 'No downloads.json configured.');
+    return;
+  }
+
+  const state = storage.load();
+  const versionsJson = generateVersionsJson(state.versions, downloadsConfig);
+
+  const outputPath = './data/versions.json';
+  writeFileSync(outputPath, JSON.stringify(versionsJson, null, 2));
+
+  await bot.sendMessage(
+    CHAT_ID,
+    `Generated versions.json with ${versionsJson.tools.length} tools.\nPath: ${outputPath}`
+  );
 });
 
 // Start scheduled checks
