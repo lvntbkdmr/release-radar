@@ -1,5 +1,11 @@
 // src/fetchers/github-release.ts
+
+/**
+ * Fetches the latest stable release version from a GitHub repository.
+ * Uses /releases/latest endpoint which excludes pre-releases and drafts by design.
+ */
 export async function fetchGitHubRelease(repo: string): Promise<string> {
+  // Note: /releases/latest only returns stable releases (no pre-releases or drafts)
   const url = `https://api.github.com/repos/${repo}/releases/latest`;
 
   const response = await fetch(url, {

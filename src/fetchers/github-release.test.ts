@@ -2,12 +2,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchGitHubRelease } from './github-release.js';
 
+// Note: Uses /releases/latest which only returns stable releases (excludes pre-releases and drafts)
 describe('fetchGitHubRelease', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('extracts version from tag_name', async () => {
+  it('fetches latest stable release (not pre-release)', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ tag_name: 'v1.12.0' })
