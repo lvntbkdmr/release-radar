@@ -45,6 +45,36 @@ Built for environments with limited internet access (e.g., intranet) where manua
 
 ## Installation
 
+### From npm (recommended)
+
+```bash
+# Install globally
+npm install -g @lvnt/release-radar
+
+# Create a directory for config and data
+mkdir ~/release-radar && cd ~/release-radar
+
+# First run creates config files (.env and config/tools.json)
+release-radar
+
+# Edit .env with your Telegram credentials
+nano .env
+
+# Run again
+release-radar
+```
+
+### With pm2 (recommended for production)
+
+```bash
+cd ~/release-radar
+pm2 start release-radar --name release-radar
+pm2 save
+pm2 startup  # Enable auto-start on boot
+```
+
+### From source (for development)
+
 ```bash
 # Clone the repository
 git clone https://github.com/lvntbkdmr/release-radar.git
@@ -57,8 +87,9 @@ npm install
 cp .env.example .env
 # Edit .env with your Telegram credentials
 
-# Build
+# Build and run
 npm run build
+npm start
 ```
 
 ## Configuration
@@ -99,24 +130,6 @@ Edit `config/tools.json` to add/remove tools:
 | `custom` | `customFetcher` | Built-in fetchers: `vscode`, `claude-cli`, `cmake` |
 
 ## Usage
-
-### Development
-```bash
-npm run dev
-```
-
-### Production
-```bash
-npm run build
-npm start
-```
-
-### With pm2 (recommended)
-```bash
-npm install -g pm2
-pm2 start npm --name "release-radar" -- start
-pm2 save
-```
 
 ### Telegram Commands
 
