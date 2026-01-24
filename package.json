@@ -4,7 +4,8 @@
   "description": "Monitor tool versions and notify via Telegram when updates are detected",
   "main": "dist/index.js",
   "bin": {
-    "release-radar": "bin/release-radar.js"
+    "release-radar": "bin/release-radar.js",
+    "release-radar-updater": "bin/release-radar-updater.js"
   },
   "type": "module",
   "scripts": {
