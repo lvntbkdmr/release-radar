@@ -65,10 +65,16 @@ if (!existsSync(DATA_DIR)) {
 }
 console.log(`Data directory: ${DATA_DIR}`);
 
+// Log package version for debugging
+const pkgJson = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'));
+console.log(`ReleaseRadar version: ${pkgJson.version}`);
+
 // Sync cli/ source from package to user directory for publishing
 // Always sync to ensure updates from the package are reflected
 const PKG_CLI_DIR = join(PKG_ROOT, 'cli');
 const USER_CLI_DIR = join(DATA_DIR, 'cli');
+console.log(`Syncing CLI source from ${PKG_CLI_DIR} to ${USER_CLI_DIR}...`);
+
 if (existsSync(PKG_CLI_DIR)) {
   // Create user CLI dir if it doesn't exist
   if (!existsSync(USER_CLI_DIR)) {
@@ -77,14 +83,24 @@ if (existsSync(PKG_CLI_DIR)) {
 
   // Sync source files (excluding node_modules which is installed separately)
   const filesToSync = ['src', 'bin', 'package.json', 'tsconfig.json', 'README.md'];
+  let syncedCount = 0;
   for (const file of filesToSync) {
     const srcPath = join(PKG_CLI_DIR, file);
     const destPath = join(USER_CLI_DIR, file);
     if (existsSync(srcPath)) {
-      cpSync(srcPath, destPath, { recursive: true, force: true });
+      try {
+        cpSync(srcPath, destPath, { recursive: true, force: true });
+        syncedCount++;
+      } catch (err) {
+        console.error(`Failed to sync ${file}: ${err}`);
+      }
+    } else {
+      console.log(`CLI source file not found: ${srcPath}`);
     }
   }
-  console.log(`CLI source synced to ${USER_CLI_DIR}`);
+  console.log(`CLI source synced: ${syncedCount}/${filesToSync.length} files`);
+} else {
+  console.error(`CLI source directory not found: ${PKG_CLI_DIR}`);
 }
 
 // Initialize components
