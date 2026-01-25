@@ -4,7 +4,7 @@ config();
 
 import TelegramBot from 'node-telegram-bot-api';
 import cron, { ScheduledTask } from 'node-cron';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { Storage } from './storage.js';
@@ -65,12 +65,23 @@ if (!existsSync(DATA_DIR)) {
 }
 console.log(`Data directory: ${DATA_DIR}`);
 
+// Copy cli/ to user directory for publishing (needs to be writable)
+const PKG_CLI_DIR = join(PKG_ROOT, 'cli');
+const USER_CLI_DIR = join(DATA_DIR, 'cli');
+if (existsSync(PKG_CLI_DIR) && !existsSync(USER_CLI_DIR)) {
+  console.log(`Copying CLI source to ${USER_CLI_DIR}...`);
+  cpSync(PKG_CLI_DIR, USER_CLI_DIR, { recursive: true });
+  console.log('CLI source copied successfully');
+} else if (existsSync(USER_CLI_DIR)) {
+  console.log(`CLI source directory: ${USER_CLI_DIR}`);
+}
+
 // Initialize components
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 const storage = new Storage(join(DATA_DIR, 'versions.json'));
 const notifier = new Notifier(bot, validatedChatId);
 const checker = new Checker(configData.tools, storage, notifier);
-const cliPublisher = new CliPublisher(downloadsConfig, join(PKG_ROOT, 'cli'));
+const cliPublisher = new CliPublisher(downloadsConfig, USER_CLI_DIR);
 
 // Track scheduled task for rescheduling
 let scheduledTask: ScheduledTask | null = null;
