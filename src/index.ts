@@ -4,7 +4,9 @@ config();
 
 import TelegramBot from 'node-telegram-bot-api';
 import cron, { ScheduledTask } from 'node-cron';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { Storage } from './storage.js';
 import { Notifier } from './notifier.js';
 import { Checker } from './checker.js';
@@ -12,9 +14,14 @@ import { generateVersionsJson } from './versions-generator.js';
 import { CliPublisher } from './cli-publisher.js';
 import type { Config, DownloadsConfig } from './types.js';
 
+// Get package directory for resolving config paths
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PKG_ROOT = join(__dirname, '..');  // dist/../ = package root
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const CONFIG_PATH = './config/tools.json';
+const CONFIG_PATH = join(PKG_ROOT, 'config', 'tools.json');
 
 if (!BOT_TOKEN || !CHAT_ID) {
   console.error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID environment variables');
@@ -27,7 +34,7 @@ const validatedChatId = CHAT_ID as string;
 // Load config
 let configData: Config = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'));
 
-const DOWNLOADS_PATH = './config/downloads.json';
+const DOWNLOADS_PATH = join(PKG_ROOT, 'config', 'downloads.json');
 let downloadsConfig: DownloadsConfig = {};
 try {
   downloadsConfig = JSON.parse(readFileSync(DOWNLOADS_PATH, 'utf-8'));
@@ -35,12 +42,18 @@ try {
   console.log('No downloads.json found, CLI generation disabled');
 }
 
+// Data directory - use package root for now, could be made configurable
+const DATA_DIR = join(PKG_ROOT, 'data');
+if (!existsSync(DATA_DIR)) {
+  mkdirSync(DATA_DIR, { recursive: true });
+}
+
 // Initialize components
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-const storage = new Storage('./data/versions.json');
+const storage = new Storage(join(DATA_DIR, 'versions.json'));
 const notifier = new Notifier(bot, validatedChatId);
 const checker = new Checker(configData.tools, storage, notifier);
-const cliPublisher = new CliPublisher(downloadsConfig);
+const cliPublisher = new CliPublisher(downloadsConfig, join(PKG_ROOT, 'cli'));
 
 // Track scheduled task for rescheduling
 let scheduledTask: ScheduledTask | null = null;
@@ -181,7 +194,7 @@ bot.onText(/\/generate/, async (msg) => {
   const state = storage.load();
   const versionsJson = generateVersionsJson(state.versions, downloadsConfig);
 
-  const outputPath = './data/cli-versions.json';
+  const outputPath = join(DATA_DIR, 'cli-versions.json');
   writeFileSync(outputPath, JSON.stringify(versionsJson, null, 2));
 
   await bot.sendMessage(
