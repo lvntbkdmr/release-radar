@@ -65,15 +65,26 @@ if (!existsSync(DATA_DIR)) {
 }
 console.log(`Data directory: ${DATA_DIR}`);
 
-// Copy cli/ to user directory for publishing (needs to be writable)
+// Sync cli/ source from package to user directory for publishing
+// Always sync to ensure updates from the package are reflected
 const PKG_CLI_DIR = join(PKG_ROOT, 'cli');
 const USER_CLI_DIR = join(DATA_DIR, 'cli');
-if (existsSync(PKG_CLI_DIR) && !existsSync(USER_CLI_DIR)) {
-  console.log(`Copying CLI source to ${USER_CLI_DIR}...`);
-  cpSync(PKG_CLI_DIR, USER_CLI_DIR, { recursive: true });
-  console.log('CLI source copied successfully');
-} else if (existsSync(USER_CLI_DIR)) {
-  console.log(`CLI source directory: ${USER_CLI_DIR}`);
+if (existsSync(PKG_CLI_DIR)) {
+  // Create user CLI dir if it doesn't exist
+  if (!existsSync(USER_CLI_DIR)) {
+    mkdirSync(USER_CLI_DIR, { recursive: true });
+  }
+
+  // Sync source files (excluding node_modules which is installed separately)
+  const filesToSync = ['src', 'bin', 'package.json', 'tsconfig.json', 'README.md'];
+  for (const file of filesToSync) {
+    const srcPath = join(PKG_CLI_DIR, file);
+    const destPath = join(USER_CLI_DIR, file);
+    if (existsSync(srcPath)) {
+      cpSync(srcPath, destPath, { recursive: true, force: true });
+    }
+  }
+  console.log(`CLI source synced to ${USER_CLI_DIR}`);
 }
 
 // Initialize components
