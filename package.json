@@ -1,6 +1,6 @@
 {
   "name": "@lvnt/release-radar",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "description": "Monitor tool versions and notify via Telegram when updates are detected",
   "main": "dist/index.js",
   "bin": {
@@ -45,6 +45,7 @@
     "cli/package.json",
     "cli/tsconfig.json",
     "cli/versions.json",
+    "cli/README.md",
     ".env.example"
   ],
   "dependencies": {
