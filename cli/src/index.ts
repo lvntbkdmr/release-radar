@@ -46,7 +46,7 @@ ${chalk.bold('EXAMPLES:')}
 ${chalk.bold('CONFIG LOCATION:')}
   ~/.release-radar-cli/config.json
 
-${chalk.gray('For more info: https://github.com/lvnt/release-radar')}
+${chalk.gray('For more info: https://github.com/lvntbkdmr/release-radar')}
 `);
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@lvnt/release-radar-cli",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Interactive CLI for downloading tools through Nexus proxy",
   "main": "dist/index.js",
   "bin": {
