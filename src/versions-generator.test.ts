@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateVersionsJson } from './versions-generator.js';
-import type { DownloadsConfig } from './types.js';
+import type { DownloadsConfig, VersionsJsonToolDownload, VersionsJsonToolNpm } from './types.js';
 
 describe('generateVersionsJson', () => {
   it('merges version data with download config', () => {
@@ -27,12 +27,12 @@ describe('generateVersionsJson', () => {
     expect(result.tools).toHaveLength(2);
     expect(result.generatedAt).toBeDefined();
 
-    const ninja = result.tools.find(t => t.name === 'Ninja');
+    const ninja = result.tools.find(t => t.name === 'Ninja') as VersionsJsonToolDownload;
     expect(ninja).toBeDefined();
-    expect(ninja!.displayName).toBe('Ninja Build');
-    expect(ninja!.version).toBe('1.12.0');
-    expect(ninja!.downloadUrl).toBe('{{NEXUS_URL}}/github.com/ninja-build/ninja/releases/download/v1.12.0/ninja-linux.zip');
-    expect(ninja!.filename).toBe('ninja-1.12.0-linux.zip');
+    expect(ninja.displayName).toBe('Ninja Build');
+    expect(ninja.version).toBe('1.12.0');
+    expect(ninja.downloadUrl).toBe('{{NEXUS_URL}}/github.com/ninja-build/ninja/releases/download/v1.12.0/ninja-linux.zip');
+    expect(ninja.filename).toBe('ninja-1.12.0-linux.zip');
   });
 
   it('only includes tools that have download config', () => {
@@ -71,7 +71,7 @@ describe('generateVersionsJson', () => {
     const result = generateVersionsJson(versions, downloads);
 
     expect(result.tools).toHaveLength(1);
-    const git = result.tools[0];
+    const git = result.tools[0] as VersionsJsonToolDownload;
     expect(git.downloadUrl).toBe('{{NEXUS_URL}}/github.com/git-for-windows/git/releases/download/v2.52.0.windows.1/Git-2.52.0-64-bit.exe');
     expect(git.filename).toBe('Git-2.52.0-64-bit.exe');
   });
@@ -92,12 +92,12 @@ describe('generateVersionsJson', () => {
     const result = generateVersionsJson(versions, downloads);
 
     expect(result.tools).toHaveLength(1);
-    const ralphy = result.tools[0];
+    const ralphy = result.tools[0] as VersionsJsonToolNpm;
     expect(ralphy.name).toBe('Ralphy');
     expect(ralphy.displayName).toBe('Ralphy CLI');
     expect(ralphy.version).toBe('2.0.0');
     expect(ralphy.type).toBe('npm');
-    expect((ralphy as any).package).toBe('ralphy-cli');
+    expect(ralphy.package).toBe('ralphy-cli');
     expect((ralphy as any).downloadUrl).toBeUndefined();
   });
 });
