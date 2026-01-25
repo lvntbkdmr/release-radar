@@ -7,7 +7,7 @@ import { DownloadTracker } from './tracker.js';
 import { loadVersions } from './versions.js';
 import { checkAndUpdate } from './updater.js';
 import { downloadFile, updateNpmPackage } from './downloader.js';
-import { promptSetup, promptToolSelection, type ToolChoice } from './ui.js';
+import { promptSetup, promptToolSelection, renderTable, type ToolChoice, type TableRow } from './ui.js';
 import { isNpmTool } from './types.js';
 
 function getVersion(): string {
@@ -56,25 +56,28 @@ async function showStatus(): Promise<void> {
   const downloaded = tracker.getAll();
 
   console.log(chalk.bold('\nTool Status:\n'));
-  console.log(chalk.bold('  Tool               Latest       Downloaded   Status   Type'));
-  console.log(chalk.gray('─'.repeat(70)));
 
-  for (const tool of versions.tools) {
+  const rows: TableRow[] = versions.tools.map(tool => {
     const record = downloaded[tool.name];
-    const downloadedVersion = record?.version ?? '-';
-
-    let status: string;
+    let status: 'new' | 'update' | 'current';
     if (!record) {
-      status = chalk.blue('NEW');
+      status = 'new';
     } else if (record.version !== tool.version) {
-      status = chalk.yellow('UPDATE');
+      status = 'update';
     } else {
-      status = chalk.green('✓');
+      status = 'current';
     }
 
-    const typeStr = isNpmTool(tool) ? chalk.magenta('npm') : chalk.cyan('wget');
-    console.log(`  ${tool.displayName.padEnd(18)} ${tool.version.padEnd(12)} ${downloadedVersion.padEnd(12)} ${status.padEnd(12)} ${typeStr}`);
-  }
+    return {
+      displayName: tool.displayName,
+      version: tool.version,
+      downloadedVersion: record?.version ?? '-',
+      status,
+      type: isNpmTool(tool) ? 'npm' : 'download',
+    };
+  });
+
+  renderTable(rows);
   console.log('');
 }
 

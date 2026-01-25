@@ -126,24 +126,41 @@ function createToolChoice(tool: VersionsJsonTool, downloaded: DownloadedState): 
   }
 }
 
-export async function promptToolSelection(
-  tools: VersionsJsonTool[],
-  downloaded: DownloadedState,
-  generatedAt: string
-): Promise<ToolChoice[]> {
-  const choices: ToolChoice[] = tools.map((tool) => createToolChoice(tool, downloaded));
+export interface TableRow {
+  displayName: string;
+  version: string;
+  downloadedVersion: string;
+  status: 'new' | 'update' | 'current';
+  type: 'npm' | 'download';
+}
 
-  console.log(chalk.bold(`\nrelease-radar-cli`));
-  console.log(chalk.gray(`Last updated: ${new Date(generatedAt).toLocaleString()}\n`));
+export function renderTable(rows: TableRow[]): void {
+  // Calculate dynamic column widths
+  const colWidths = {
+    tool: Math.max(4, ...rows.map(r => r.displayName.length)) + 2,
+    latest: Math.max(6, ...rows.map(r => r.version.length)) + 2,
+    downloaded: Math.max(10, ...rows.map(r => r.downloadedVersion.length)) + 2,
+    status: 8,
+    type: 4,
+  };
 
-  // Display table
-  console.log(chalk.bold('  Tool               Latest       Downloaded   Status   Type'));
-  console.log(chalk.gray('─'.repeat(70)));
+  const totalWidth = colWidths.tool + colWidths.latest + colWidths.downloaded + colWidths.status + colWidths.type + 2;
 
-  choices.forEach((choice) => {
-    const downloadedStr = choice.downloadedVersion ?? '-';
+  // Header
+  console.log(chalk.bold(
+    '  ' +
+    'Tool'.padEnd(colWidths.tool) +
+    'Latest'.padEnd(colWidths.latest) +
+    'Downloaded'.padEnd(colWidths.downloaded) +
+    'Status'.padEnd(colWidths.status) +
+    'Type'
+  ));
+  console.log(chalk.gray('─'.repeat(totalWidth)));
+
+  // Rows
+  for (const row of rows) {
     let statusStr: string;
-    switch (choice.status) {
+    switch (row.status) {
       case 'new':
         statusStr = chalk.blue('NEW');
         break;
@@ -154,12 +171,39 @@ export async function promptToolSelection(
         statusStr = chalk.green('✓');
         break;
     }
-    const typeStr = choice.type === 'npm' ? chalk.magenta('npm') : chalk.cyan('wget');
-    console.log(
-      `  ${choice.displayName.padEnd(18)} ${choice.version.padEnd(12)} ${downloadedStr.padEnd(12)} ${statusStr.padEnd(12)} ${typeStr}`
-    );
-  });
+    const typeStr = row.type === 'npm' ? chalk.magenta('npm') : chalk.cyan('wget');
 
+    console.log(
+      '  ' +
+      row.displayName.padEnd(colWidths.tool) +
+      row.version.padEnd(colWidths.latest) +
+      row.downloadedVersion.padEnd(colWidths.downloaded) +
+      statusStr.padEnd(colWidths.status + 5) + // +5 for chalk color codes
+      typeStr
+    );
+  }
+}
+
+export async function promptToolSelection(
+  tools: VersionsJsonTool[],
+  downloaded: DownloadedState,
+  generatedAt: string
+): Promise<ToolChoice[]> {
+  const choices: ToolChoice[] = tools.map((tool) => createToolChoice(tool, downloaded));
+
+  console.log(chalk.bold(`\nrelease-radar-cli`));
+  console.log(chalk.gray(`Last updated: ${new Date(generatedAt).toLocaleString()}\n`));
+
+  // Convert to table rows and display
+  const rows: TableRow[] = choices.map(choice => ({
+    displayName: choice.displayName,
+    version: choice.version,
+    downloadedVersion: choice.downloadedVersion ?? '-',
+    status: choice.status,
+    type: choice.type === 'npm' ? 'npm' : 'download',
+  }));
+
+  renderTable(rows);
   console.log('');
 
   const { selected } = await inquirer.prompt([
