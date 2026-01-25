@@ -159,16 +159,21 @@ export function renderTable(rows: TableRow[]): void {
 
   // Rows
   for (const row of rows) {
-    let statusStr: string;
+    // Pad plain text BEFORE applying colors (chalk adds invisible ANSI codes)
+    let statusText: string;
+    let statusColored: string;
     switch (row.status) {
       case 'new':
-        statusStr = chalk.blue('NEW');
+        statusText = 'NEW'.padEnd(colWidths.status);
+        statusColored = chalk.blue(statusText);
         break;
       case 'update':
-        statusStr = chalk.yellow('UPDATE');
+        statusText = 'UPDATE'.padEnd(colWidths.status);
+        statusColored = chalk.yellow(statusText);
         break;
       case 'current':
-        statusStr = chalk.green('✓');
+        statusText = '✓'.padEnd(colWidths.status);
+        statusColored = chalk.green(statusText);
         break;
     }
     const typeStr = row.type === 'npm' ? chalk.magenta('npm') : chalk.cyan('wget');
@@ -178,7 +183,7 @@ export function renderTable(rows: TableRow[]): void {
       row.displayName.padEnd(colWidths.tool) +
       row.version.padEnd(colWidths.latest) +
       row.downloadedVersion.padEnd(colWidths.downloaded) +
-      statusStr.padEnd(colWidths.status + 5) + // +5 for chalk color codes
+      statusColored +
       typeStr
     );
   }
