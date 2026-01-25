@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'child_process';
+import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -45,14 +45,7 @@ export async function checkAndUpdate(): Promise<boolean> {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     if (result) console.log(result);
-    console.log('Update complete. Restarting...\n');
-
-    // Restart self with a fresh terminal
-    const child = spawn(process.argv[0], process.argv.slice(1), {
-      detached: true,
-      stdio: 'inherit',
-    });
-    child.unref();
+    console.log('Update complete. Please run the command again.\n');
     process.exit(0);
   } catch (error) {
     console.error('Update failed, continuing with current version');
