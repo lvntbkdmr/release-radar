@@ -40,7 +40,11 @@
     "dist",
     "bin",
     "config",
-    "cli",
+    "cli/src",
+    "cli/bin",
+    "cli/package.json",
+    "cli/tsconfig.json",
+    "cli/versions.json",
     ".env.example"
   ],
   "dependencies": {
