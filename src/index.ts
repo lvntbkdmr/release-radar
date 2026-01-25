@@ -190,6 +190,34 @@ bot.onText(/\/generate/, async (msg) => {
   );
 });
 
+// Helper to format CLI preview
+function formatCliPreview(versions: Record<string, string>): string {
+  const versionsJson = generateVersionsJson(versions, downloadsConfig);
+  if (versionsJson.tools.length === 0) {
+    return 'No tools configured in downloads.json';
+  }
+
+  const lines = versionsJson.tools.map((tool) => {
+    const typeLabel = tool.type === 'npm' ? '(npm)' : '';
+    return `• ${tool.displayName}: ${tool.version} ${typeLabel}`;
+  });
+
+  return `CLI will include ${versionsJson.tools.length} tools:\n${lines.join('\n')}`;
+}
+
+bot.onText(/\/clipreview/, async (msg) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  if (!cliPublisher.isConfigured()) {
+    await bot.sendMessage(validatedChatId, 'CLI publisher not configured. Check downloads.json and cli/ directory.');
+    return;
+  }
+
+  const state = storage.load();
+  const preview = formatCliPreview(state.versions);
+  await bot.sendMessage(validatedChatId, `📋 CLI Preview\n\n${preview}\n\nUse /publishcli to publish.`);
+});
+
 bot.onText(/\/publishcli/, async (msg) => {
   if (msg.chat.id.toString() !== validatedChatId) return;
 
@@ -198,8 +226,10 @@ bot.onText(/\/publishcli/, async (msg) => {
     return;
   }
 
-  await bot.sendMessage(validatedChatId, 'Publishing CLI...');
   const state = storage.load();
+  const preview = formatCliPreview(state.versions);
+  await bot.sendMessage(validatedChatId, `📦 Publishing CLI...\n\n${preview}`);
+
   const result = await cliPublisher.publish(state.versions);
 
   if (result.success) {
