@@ -16,6 +16,14 @@ Built for environments with limited internet access (e.g., intranet) where manua
 - Periodic checks via cron (configurable interval)
 - Manual check via Telegram `/check` command
 - Persistent version storage (survives restarts)
+- **Auto-publishes companion CLI** when updates are detected
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| [@lvnt/release-radar](https://www.npmjs.com/package/@lvnt/release-radar) | Main service - monitors versions, sends notifications |
+| [@lvnt/release-radar-cli](https://www.npmjs.com/package/@lvnt/release-radar-cli) | Companion CLI - download tools through Nexus proxy |
 
 ## Tracked Tools
 
@@ -129,16 +137,63 @@ Edit `config/tools.json` to add/remove tools:
 | `vscode-marketplace` | `extensionId` | VS Code extension (e.g., `"publisher.extension"`) |
 | `custom` | `customFetcher` | Built-in fetchers: `vscode`, `claude-cli`, `cmake` |
 
+### Downloads Configuration
+
+Edit `config/downloads.json` to configure CLI download URLs:
+
+```json
+{
+  "ninja": {
+    "displayName": "Ninja",
+    "downloadUrl": "https://github.com/ninja-build/ninja/releases/download/v{{VERSION}}/ninja-win.zip",
+    "filename": "ninja-{{VERSION}}.zip"
+  },
+  "ralphy": {
+    "type": "npm",
+    "displayName": "Ralphy",
+    "package": "ralphy"
+  }
+}
+```
+
+Placeholders:
+- `{{VERSION}}` - Full version (e.g., `2.52.0.windows.1`)
+- `{{VERSION_BASE}}` - Base semver (e.g., `2.52.0`)
+- `{{NEXUS_URL}}` - Replaced by CLI with user's Nexus URL
+
 ## Usage
 
 ### Telegram Commands
 
 | Command | Description |
 |---------|-------------|
-| `/check` | Manually trigger version check |
-| `/status` | Show all tracked versions |
+| `/check` | Manually trigger version check (auto-publishes CLI if updates found) |
+| `/status` | Show all tracked versions + last/next check times |
 | `/interval` | Show current check interval |
 | `/setinterval <hours>` | Set check interval (1-24 hours) |
+| `/generate` | Generate versions.json file locally |
+| `/clipreview` | Preview tools/versions that will be included in CLI |
+| `/publishcli` | Manually publish CLI with current tracked versions |
+
+## Companion CLI
+
+The companion CLI (`@lvnt/release-radar-cli`) allows users on intranet machines to download tracked tools through a Nexus proxy.
+
+### How It Works
+
+1. **ReleaseRadar** monitors tool versions
+2. When updates are detected, it **auto-publishes** the CLI with new versions
+3. Users run `release-radar-cli` on their machines
+4. CLI shows available tools and downloads through configured Nexus proxy
+
+### CLI Installation
+
+```bash
+npm install -g @lvnt/release-radar-cli
+release-radar-cli
+```
+
+See [@lvnt/release-radar-cli](https://www.npmjs.com/package/@lvnt/release-radar-cli) for full documentation.
 
 ## Auto-Updater (Optional)
 
@@ -174,15 +229,24 @@ sudo visudo
 # yourusername ALL=(ALL) NOPASSWD: /usr/bin/npm
 ```
 
+## Data Storage
+
+| Location | Contents |
+|----------|----------|
+| Package directory (`config/`) | `tools.json`, `downloads.json` (read-only config) |
+| `~/.release-radar/` | `versions.json` (tracked versions), `cli/` (CLI source for publishing) |
+
 ## Project Structure
 
 ```
 release-radar/
 ├── src/
-│   ├── index.ts          # Main entry point
+│   ├── index.ts          # Main entry point, Telegram bot
 │   ├── checker.ts        # Version check orchestration
 │   ├── storage.ts        # JSON persistence
 │   ├── notifier.ts       # Telegram notifications
+│   ├── cli-publisher.ts  # CLI auto-publishing
+│   ├── versions-generator.ts  # Generate versions.json
 │   ├── types.ts          # TypeScript interfaces
 │   └── fetchers/
 │       ├── index.ts      # Fetcher registry
@@ -190,19 +254,23 @@ release-radar/
 │       ├── npm.ts
 │       ├── vscode-marketplace.ts
 │       └── custom.ts
+├── cli/                  # Companion CLI source
+│   ├── src/
+│   │   ├── index.ts      # CLI entry point
+│   │   ├── downloader.ts # wget/npm execution
+│   │   ├── ui.ts         # Interactive prompts
+│   │   └── updater.ts    # Auto-update
+│   └── versions.json     # Embedded version data
 ├── config/
-│   └── tools.json        # Tool configuration
-├── data/
-│   └── versions.json     # Persisted version state
-├── docs/
-│   └── OPERATIONS.md     # Operations guide
+│   ├── tools.json        # Tools to monitor
+│   └── downloads.json    # Download URL templates
 └── dist/                 # Compiled JavaScript
 ```
 
 ## Testing
 
 ```bash
-# Run all tests
+# Run all tests (59 tests)
 npm test
 
 # Watch mode
@@ -217,18 +285,15 @@ npm run test:watch
 🔄 Git: 2.43.0 → 2.44.0
 ```
 
+### CLI Published
+```
+📦 CLI published: v0.2.8
+```
+
 ### Fetch Failure
 ```
 ⚠️ Failed to check CMake: Request timeout
 ```
-
-## Operations
-
-See [docs/OPERATIONS.md](docs/OPERATIONS.md) for detailed instructions on:
-- Starting/stopping the service
-- Viewing logs
-- Auto-start configuration
-- Troubleshooting
 
 ## License
 
