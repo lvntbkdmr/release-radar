@@ -38,3 +38,19 @@ export function downloadFile(
     return { success: false, error: message };
   }
 }
+
+export function buildNpmUpdateCommand(packageName: string): string {
+  return `npm update -g ${packageName}`;
+}
+
+export function updateNpmPackage(packageName: string): DownloadResult {
+  const command = buildNpmUpdateCommand(packageName);
+
+  try {
+    execSync(command, { stdio: 'inherit' });
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: message };
+  }
+}

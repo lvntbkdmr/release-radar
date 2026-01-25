@@ -54,4 +54,50 @@ describe('generateVersionsJson', () => {
     expect(result.tools).toHaveLength(1);
     expect(result.tools[0].name).toBe('Ninja');
   });
+
+  it('supports VERSION_BASE placeholder for versions like 2.52.0.windows.1', () => {
+    const versions: Record<string, string> = {
+      'Git': '2.52.0.windows.1',
+    };
+
+    const downloads: DownloadsConfig = {
+      'Git': {
+        displayName: 'Git for Windows',
+        downloadUrl: 'github.com/git-for-windows/git/releases/download/v{{VERSION}}/Git-{{VERSION_BASE}}-64-bit.exe',
+        filename: 'Git-{{VERSION_BASE}}-64-bit.exe',
+      },
+    };
+
+    const result = generateVersionsJson(versions, downloads);
+
+    expect(result.tools).toHaveLength(1);
+    const git = result.tools[0];
+    expect(git.downloadUrl).toBe('{{NEXUS_URL}}/github.com/git-for-windows/git/releases/download/v2.52.0.windows.1/Git-2.52.0-64-bit.exe');
+    expect(git.filename).toBe('Git-2.52.0-64-bit.exe');
+  });
+
+  it('generates npm tools correctly', () => {
+    const versions: Record<string, string> = {
+      'Ralphy': '2.0.0',
+    };
+
+    const downloads: DownloadsConfig = {
+      'Ralphy': {
+        type: 'npm',
+        displayName: 'Ralphy CLI',
+        package: 'ralphy-cli',
+      },
+    };
+
+    const result = generateVersionsJson(versions, downloads);
+
+    expect(result.tools).toHaveLength(1);
+    const ralphy = result.tools[0];
+    expect(ralphy.name).toBe('Ralphy');
+    expect(ralphy.displayName).toBe('Ralphy CLI');
+    expect(ralphy.version).toBe('2.0.0');
+    expect(ralphy.type).toBe('npm');
+    expect((ralphy as any).package).toBe('ralphy-cli');
+    expect((ralphy as any).downloadUrl).toBeUndefined();
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildWgetCommand, replaceNexusUrl } from './downloader.js';
+import { buildWgetCommand, replaceNexusUrl, buildNpmUpdateCommand } from './downloader.js';
 
 describe('downloader', () => {
   describe('replaceNexusUrl', () => {
@@ -17,6 +17,13 @@ describe('downloader', () => {
         '/downloads/file.zip'
       );
       expect(cmd).toBe('wget -O "/downloads/file.zip" "http://nexus.local/file.zip"');
+    });
+  });
+
+  describe('buildNpmUpdateCommand', () => {
+    it('builds correct npm update command', () => {
+      const cmd = buildNpmUpdateCommand('ralphy-cli');
+      expect(cmd).toBe('npm update -g ralphy-cli');
     });
   });
 });

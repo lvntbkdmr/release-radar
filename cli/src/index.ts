@@ -3,8 +3,9 @@ import { ConfigManager } from './config.js';
 import { DownloadTracker } from './tracker.js';
 import { loadVersions } from './versions.js';
 import { checkAndUpdate } from './updater.js';
-import { downloadFile } from './downloader.js';
-import { promptSetup, promptToolSelection } from './ui.js';
+import { downloadFile, updateNpmPackage } from './downloader.js';
+import { promptSetup, promptToolSelection, type ToolChoice } from './ui.js';
+import { isNpmTool } from './types.js';
 
 async function showStatus(): Promise<void> {
   const tracker = new DownloadTracker();
@@ -12,6 +13,8 @@ async function showStatus(): Promise<void> {
   const downloaded = tracker.getAll();
 
   console.log(chalk.bold('\nTool Status:\n'));
+  console.log(chalk.bold('  Tool               Latest       Downloaded   Status   Type'));
+  console.log(chalk.gray('─'.repeat(70)));
 
   for (const tool of versions.tools) {
     const record = downloaded[tool.name];
@@ -26,7 +29,8 @@ async function showStatus(): Promise<void> {
       status = chalk.green('✓');
     }
 
-    console.log(`  ${tool.displayName.padEnd(20)} ${tool.version.padEnd(12)} ${downloadedVersion.padEnd(12)} ${status}`);
+    const typeStr = isNpmTool(tool) ? chalk.magenta('npm') : chalk.cyan('wget');
+    console.log(`  ${tool.displayName.padEnd(18)} ${tool.version.padEnd(12)} ${downloadedVersion.padEnd(12)} ${status.padEnd(12)} ${typeStr}`);
   }
   console.log('');
 }
@@ -69,23 +73,34 @@ async function runInteractive(): Promise<void> {
     return;
   }
 
-  // Download selected tools
+  // Download/update selected tools
   console.log('');
   for (const tool of selected) {
-    console.log(chalk.bold(`Downloading ${tool.displayName} ${tool.version}...`));
+    if (tool.type === 'npm') {
+      console.log(chalk.bold(`Updating npm package ${tool.displayName} (${tool.package})...`));
+      const result = updateNpmPackage(tool.package);
 
-    const result = downloadFile(
-      tool.downloadUrl,
-      config.downloadDir,
-      tool.filename,
-      config.nexusUrl
-    );
-
-    if (result.success) {
-      tracker.recordDownload(tool.name, tool.version, tool.filename);
-      console.log(chalk.green(`  Saved to ${config.downloadDir}/${tool.filename} ✓\n`));
+      if (result.success) {
+        tracker.recordDownload(tool.name, tool.version, `npm:${tool.package}`);
+        console.log(chalk.green(`  Updated ${tool.package} to ${tool.version} ✓\n`));
+      } else {
+        console.log(chalk.red(`  Failed: ${result.error}\n`));
+      }
     } else {
-      console.log(chalk.red(`  Failed: ${result.error}\n`));
+      console.log(chalk.bold(`Downloading ${tool.displayName} ${tool.version}...`));
+      const result = downloadFile(
+        tool.downloadUrl,
+        config.downloadDir,
+        tool.filename,
+        config.nexusUrl
+      );
+
+      if (result.success) {
+        tracker.recordDownload(tool.name, tool.version, tool.filename);
+        console.log(chalk.green(`  Saved to ${config.downloadDir}/${tool.filename} ✓\n`));
+      } else {
+        console.log(chalk.red(`  Failed: ${result.error}\n`));
+      }
     }
   }
 

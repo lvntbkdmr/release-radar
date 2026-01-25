@@ -1,17 +1,67 @@
 {
+  "Claude Code CLI": {
+    "displayName": "Claude Code CLI",
+    "downloadUrl": "storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{{VERSION}}/win32-x64/claude.exe",
+    "filename": "claude-{{VERSION}}.exe"
+  },
   "Ninja": {
     "displayName": "Ninja",
-    "downloadUrl": "github.com/ninja-build/ninja/releases/download/v{{VERSION}}/ninja-linux.zip",
-    "filename": "ninja-{{VERSION}}-linux.zip"
+    "downloadUrl": "github.com/ninja-build/ninja/releases/download/v{{VERSION}}/ninja-win.zip",
+    "filename": "ninja-{{VERSION}}-win.zip"
   },
   "CMake": {
     "displayName": "CMake",
-    "downloadUrl": "github.com/Kitware/CMake/releases/download/v{{VERSION}}/cmake-{{VERSION}}-linux-x86_64.tar.gz",
-    "filename": "cmake-{{VERSION}}-linux-x86_64.tar.gz"
+    "downloadUrl": "github.com/Kitware/CMake/releases/download/v{{VERSION}}/cmake-{{VERSION}}-windows-x86_64.zip",
+    "filename": "cmake-{{VERSION}}-windows-x86_64.zip"
   },
   "Git": {
     "displayName": "Git for Windows",
-    "downloadUrl": "github.com/git-for-windows/git/releases/download/v{{VERSION}}.windows.1/Git-{{VERSION}}-64-bit.exe",
-    "filename": "Git-{{VERSION}}-64-bit.exe"
+    "downloadUrl": "github.com/git-for-windows/git/releases/download/v{{VERSION}}/Git-{{VERSION_BASE}}-64-bit.exe",
+    "filename": "Git-{{VERSION_BASE}}-64-bit.exe"
+  },
+  "Clangd": {
+    "displayName": "Clangd",
+    "downloadUrl": "github.com/clangd/clangd/releases/download/{{VERSION}}/clangd-windows-{{VERSION}}.zip",
+    "filename": "clangd-windows-{{VERSION}}.zip"
+  },
+  "Wezterm": {
+    "displayName": "Wezterm",
+    "downloadUrl": "github.com/wezterm/wezterm/releases/download/{{VERSION}}/WezTerm-{{VERSION}}-setup.exe",
+    "filename": "WezTerm-{{VERSION}}-setup.exe"
+  },
+  "vscode-cpptools": {
+    "displayName": "C/C++ Extension",
+    "downloadUrl": "github.com/microsoft/vscode-cpptools/releases/download/v{{VERSION}}/cpptools-windows-x64.vsix",
+    "filename": "cpptools-windows-x64-{{VERSION}}.vsix"
+  },
+  "vscode-clangd": {
+    "displayName": "clangd Extension",
+    "downloadUrl": "github.com/clangd/vscode-clangd/releases/download/{{VERSION}}/vscode-clangd-{{VERSION}}.vsix",
+    "filename": "vscode-clangd-{{VERSION}}.vsix"
+  },
+  "CMake Tools": {
+    "displayName": "CMake Tools Extension",
+    "downloadUrl": "github.com/microsoft/vscode-cmake-tools/releases/download/v{{VERSION}}/cmake-tools.vsix",
+    "filename": "cmake-tools-{{VERSION}}.vsix"
+  },
+  "Roo Code": {
+    "displayName": "Roo Code Extension",
+    "downloadUrl": "github.com/RooCodeInc/Roo-Code/releases/download/v{{VERSION}}/roo-cline-{{VERSION}}.vsix",
+    "filename": "roo-cline-{{VERSION}}.vsix"
+  },
+  "Atlascode": {
+    "displayName": "Atlassian Extension",
+    "downloadUrl": "github.com/atlassian/atlascode/releases/download/v{{VERSION}}/atlascode-{{VERSION}}.vsix",
+    "filename": "atlascode-{{VERSION}}.vsix"
+  },
+  "Zed": {
+    "displayName": "Zed",
+    "downloadUrl": "github.com/zed-industries/zed/releases/download/v{{VERSION}}/Zed-x86_64.exe",
+    "filename": "Zed-{{VERSION}}-x86_64.exe"
+  },
+  "Ralphy": {
+    "type": "npm",
+    "displayName": "Ralphy CLI",
+    "package": "ralphy-cli"
   }
 }

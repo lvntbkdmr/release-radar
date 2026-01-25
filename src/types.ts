@@ -15,24 +15,45 @@ export interface Config {
   tools: ToolConfig[];
 }
 
-export interface DownloadConfig {
+export interface DownloadConfigUrl {
+  type?: 'download';  // default if not specified
   displayName: string;
   downloadUrl: string;  // Template with {{VERSION}} placeholder
   filename: string;     // Template with {{VERSION}} placeholder
 }
 
+export interface DownloadConfigNpm {
+  type: 'npm';
+  displayName: string;
+  package: string;  // npm package name
+}
+
+export type DownloadConfig = DownloadConfigUrl | DownloadConfigNpm;
+
 export interface DownloadsConfig {
   [toolName: string]: DownloadConfig;
 }
 
-export interface VersionsJsonTool {
+export interface VersionsJsonToolDownload {
   name: string;
   displayName: string;
   version: string;
   publishedAt: string;
+  type?: 'download';  // default
   downloadUrl: string;  // With {{NEXUS_URL}} placeholder
   filename: string;
 }
+
+export interface VersionsJsonToolNpm {
+  name: string;
+  displayName: string;
+  version: string;
+  publishedAt: string;
+  type: 'npm';
+  package: string;
+}
+
+export type VersionsJsonTool = VersionsJsonToolDownload | VersionsJsonToolNpm;
 
 export interface VersionsJson {
   generatedAt: string;
