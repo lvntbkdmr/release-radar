@@ -17,6 +17,20 @@ function getVersion(): string {
   return pkg.version;
 }
 
+function showLogo(): void {
+  const version = getVersion();
+  const logo = `
+${chalk.cyan('  ____      _                      ____           _            ')}
+${chalk.cyan(' |  _ \\ ___| | ___  __ _ ___  ___ |  _ \\ __ _  __| | __ _ _ __ ')}
+${chalk.cyan(' | |_) / _ \\ |/ _ \\/ _` / __|/ _ \\| |_) / _` |/ _` |/ _` | \'__|')}
+${chalk.cyan(' |  _ <  __/ |  __/ (_| \\__ \\  __/|  _ < (_| | (_| | (_| | |   ')}
+${chalk.cyan(' |_| \\_\\___|_|\\___|\\__,_|___/\\___||_| \\_\\__,_|\\__,_|\\__,_|_|   ')}
+
+${chalk.gray('  Tool Download Manager')}                        ${chalk.yellow(`v${version}`)}
+`;
+  console.log(logo);
+}
+
 function showHelp(): void {
   const version = getVersion();
   console.log(`
@@ -55,7 +69,8 @@ async function showStatus(): Promise<void> {
   const versions = loadVersions();
   const downloaded = tracker.getAll();
 
-  console.log(chalk.bold('\nTool Status:\n'));
+  showLogo();
+  console.log(chalk.bold('Tool Status:\n'));
 
   const rows: TableRow[] = versions.tools.map(tool => {
     const record = downloaded[tool.name];
@@ -127,6 +142,9 @@ async function runInteractive(): Promise<void> {
   if (!skipUpdate) {
     await checkAndUpdate();
   }
+
+  // Show logo
+  showLogo();
 
   // First run setup
   if (!configManager.isConfigured()) {
