@@ -19,6 +19,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PKG_ROOT = join(__dirname, '..');  // dist/../ = package root
 
+console.log(`ReleaseRadar package root: ${PKG_ROOT}`);
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const CONFIG_PATH = join(PKG_ROOT, 'config', 'tools.json');
@@ -32,12 +34,25 @@ if (!BOT_TOKEN || !CHAT_ID) {
 const validatedChatId = CHAT_ID as string;
 
 // Load config
-let configData: Config = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'));
+console.log(`Loading config from: ${CONFIG_PATH}`);
+if (!existsSync(CONFIG_PATH)) {
+  console.error(`Config file not found: ${CONFIG_PATH}`);
+  process.exit(1);
+}
+let configData: Config;
+try {
+  configData = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'));
+} catch (error) {
+  console.error(`Failed to parse config: ${error}`);
+  process.exit(1);
+}
 
 const DOWNLOADS_PATH = join(PKG_ROOT, 'config', 'downloads.json');
+console.log(`Loading downloads config from: ${DOWNLOADS_PATH}`);
 let downloadsConfig: DownloadsConfig = {};
 try {
   downloadsConfig = JSON.parse(readFileSync(DOWNLOADS_PATH, 'utf-8'));
+  console.log(`Loaded ${Object.keys(downloadsConfig).length} download configs`);
 } catch {
   console.log('No downloads.json found, CLI generation disabled');
 }
@@ -47,6 +62,7 @@ const DATA_DIR = join(PKG_ROOT, 'data');
 if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
 }
+console.log(`Data directory: ${DATA_DIR}`);
 
 // Initialize components
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
