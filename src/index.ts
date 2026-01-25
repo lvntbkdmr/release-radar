@@ -4,7 +4,7 @@ config();
 
 import TelegramBot from 'node-telegram-bot-api';
 import cron, { ScheduledTask } from 'node-cron';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { Storage } from './storage.js';
@@ -76,20 +76,24 @@ const USER_CLI_DIR = join(DATA_DIR, 'cli');
 console.log(`Syncing CLI source from ${PKG_CLI_DIR} to ${USER_CLI_DIR}...`);
 
 if (existsSync(PKG_CLI_DIR)) {
-  // Create user CLI dir if it doesn't exist
-  if (!existsSync(USER_CLI_DIR)) {
-    mkdirSync(USER_CLI_DIR, { recursive: true });
-  }
-
-  // Sync source files (excluding node_modules which is installed separately)
+  // Sync source files (excluding node_modules and dist which are generated)
   const filesToSync = ['src', 'bin', 'package.json', 'tsconfig.json', 'README.md'];
   let syncedCount = 0;
+
   for (const file of filesToSync) {
     const srcPath = join(PKG_CLI_DIR, file);
     const destPath = join(USER_CLI_DIR, file);
+
     if (existsSync(srcPath)) {
       try {
-        cpSync(srcPath, destPath, { recursive: true, force: true });
+        // Remove existing destination first to ensure clean copy
+        if (existsSync(destPath)) {
+          rmSync(destPath, { recursive: true, force: true });
+        }
+        // Ensure parent directory exists
+        mkdirSync(USER_CLI_DIR, { recursive: true });
+        // Copy fresh
+        cpSync(srcPath, destPath, { recursive: true });
         syncedCount++;
       } catch (err) {
         console.error(`Failed to sync ${file}: ${err}`);
