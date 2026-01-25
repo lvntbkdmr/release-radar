@@ -1,4 +1,7 @@
 import chalk from 'chalk';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { ConfigManager } from './config.js';
 import { DownloadTracker } from './tracker.js';
 import { loadVersions } from './versions.js';
@@ -6,6 +9,46 @@ import { checkAndUpdate } from './updater.js';
 import { downloadFile, updateNpmPackage } from './downloader.js';
 import { promptSetup, promptToolSelection, type ToolChoice } from './ui.js';
 import { isNpmTool } from './types.js';
+
+function getVersion(): string {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkgPath = join(__dirname, '..', 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  return pkg.version;
+}
+
+function showHelp(): void {
+  const version = getVersion();
+  console.log(`
+${chalk.bold('release-radar-cli')} v${version}
+
+${chalk.bold('USAGE:')}
+  release-radar-cli [command] [options]
+
+${chalk.bold('COMMANDS:')}
+  ${chalk.cyan('(default)')}    Interactive mode - select and download tools
+  ${chalk.cyan('status')}       Show tool versions and download status
+  ${chalk.cyan('config')}       Configure or reconfigure settings (Nexus URL, download dir)
+  ${chalk.cyan('version')}      Show CLI version
+  ${chalk.cyan('help')}         Show this help message
+
+${chalk.bold('OPTIONS:')}
+  ${chalk.cyan('-v, --version')}    Show version number
+  ${chalk.cyan('-h, --help')}       Show help
+  ${chalk.cyan('--skip-update')}    Skip auto-update check on startup
+
+${chalk.bold('EXAMPLES:')}
+  release-radar-cli              # Interactive mode
+  release-radar-cli status       # Show all tool versions
+  release-radar-cli config       # Reconfigure settings
+  release-radar-cli --version    # Show version
+
+${chalk.bold('CONFIG LOCATION:')}
+  ~/.release-radar-cli/config.json
+
+${chalk.gray('For more info: https://github.com/lvnt/release-radar')}
+`);
+}
 
 async function showStatus(): Promise<void> {
   const tracker = new DownloadTracker();
@@ -37,8 +80,38 @@ async function showStatus(): Promise<void> {
 
 async function runConfig(): Promise<void> {
   const configManager = new ConfigManager();
-  const config = await promptSetup();
-  configManager.save(config);
+
+  // Check if already configured and show current values
+  if (configManager.isConfigured()) {
+    const current = configManager.load();
+    console.log(chalk.bold('\nCurrent configuration:'));
+    console.log(`  Nexus URL:      ${chalk.cyan(current.nexusUrl)}`);
+    console.log(`  Download dir:   ${chalk.cyan(current.downloadDir)}`);
+    console.log('');
+
+    const { reconfigure } = await (await import('inquirer')).default.prompt([
+      {
+        type: 'confirm',
+        name: 'reconfigure',
+        message: 'Do you want to update these settings?',
+        default: false,
+      },
+    ]);
+
+    if (!reconfigure) {
+      console.log(chalk.gray('Configuration unchanged.'));
+      return;
+    }
+
+    // Prompt with current values as defaults
+    const { promptReconfigure } = await import('./ui.js');
+    const config = await promptReconfigure(current);
+    configManager.save(config);
+  } else {
+    const config = await promptSetup();
+    configManager.save(config);
+  }
+
   console.log(chalk.green('\nConfiguration saved!'));
 }
 
@@ -143,10 +216,29 @@ async function runInteractive(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
+  const rawArgs = process.argv.slice(2);
+
+  // Handle flags first
+  if (rawArgs.includes('-v') || rawArgs.includes('--version')) {
+    console.log(getVersion());
+    return;
+  }
+
+  if (rawArgs.includes('-h') || rawArgs.includes('--help')) {
+    showHelp();
+    return;
+  }
+
+  const args = rawArgs.filter(arg => !arg.startsWith('--') && !arg.startsWith('-'));
   const command = args[0];
 
   switch (command) {
+    case 'version':
+      console.log(getVersion());
+      break;
+    case 'help':
+      showHelp();
+      break;
     case 'status':
       await showStatus();
       break;

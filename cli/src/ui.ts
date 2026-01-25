@@ -35,6 +35,36 @@ export async function promptSetup(): Promise<CliConfig> {
   };
 }
 
+export async function promptReconfigure(current: CliConfig): Promise<CliConfig> {
+  console.log(chalk.bold('\nUpdate your settings:\n'));
+
+  const answers = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'nexusUrl',
+      message: 'Nexus proxy base URL:',
+      default: current.nexusUrl,
+      validate: (input: string) => {
+        if (!input.trim()) return 'URL is required';
+        if (!input.startsWith('http')) return 'URL must start with http:// or https://';
+        return true;
+      },
+    },
+    {
+      type: 'input',
+      name: 'downloadDir',
+      message: 'Download directory:',
+      default: current.downloadDir,
+      validate: (input: string) => input.trim() ? true : 'Directory is required',
+    },
+  ]);
+
+  return {
+    nexusUrl: answers.nexusUrl.replace(/\/$/, ''),
+    downloadDir: answers.downloadDir.replace('~', process.env.HOME || ''),
+  };
+}
+
 interface ToolChoiceBase {
   name: string;
   displayName: string;
