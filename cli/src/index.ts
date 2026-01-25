@@ -78,6 +78,9 @@ async function runInteractive(): Promise<void> {
 
   // Download/update selected tools
   console.log('');
+  const successes: { name: string; version: string; type: 'download' | 'npm' }[] = [];
+  const failures: { name: string; version: string; error: string }[] = [];
+
   for (const tool of selected) {
     if (tool.type === 'npm') {
       console.log(chalk.bold(`Updating npm package ${tool.displayName} (${tool.package})...`));
@@ -86,8 +89,10 @@ async function runInteractive(): Promise<void> {
       if (result.success) {
         tracker.recordDownload(tool.name, tool.version, `npm:${tool.package}`);
         console.log(chalk.green(`  Updated ${tool.package} to ${tool.version} ✓\n`));
+        successes.push({ name: tool.displayName, version: tool.version, type: 'npm' });
       } else {
         console.log(chalk.red(`  Failed: ${result.error}\n`));
+        failures.push({ name: tool.displayName, version: tool.version, error: result.error || 'Unknown error' });
       }
     } else {
       console.log(chalk.bold(`Downloading ${tool.displayName} ${tool.version}...`));
@@ -101,13 +106,40 @@ async function runInteractive(): Promise<void> {
       if (result.success) {
         tracker.recordDownload(tool.name, tool.version, tool.filename);
         console.log(chalk.green(`  Saved to ${config.downloadDir}/${tool.filename} ✓\n`));
+        successes.push({ name: tool.displayName, version: tool.version, type: 'download' });
       } else {
         console.log(chalk.red(`  Failed: ${result.error}\n`));
+        failures.push({ name: tool.displayName, version: tool.version, error: result.error || 'Unknown error' });
       }
     }
   }
 
-  console.log(chalk.green('Done!'));
+  // Summary report
+  console.log(chalk.bold('─'.repeat(50)));
+  console.log(chalk.bold('Summary\n'));
+
+  if (successes.length > 0) {
+    console.log(chalk.green(`✓ ${successes.length} succeeded:`));
+    for (const s of successes) {
+      console.log(chalk.green(`  • ${s.name} ${s.version}`));
+    }
+  }
+
+  if (failures.length > 0) {
+    console.log(chalk.red(`\n✗ ${failures.length} failed:`));
+    for (const f of failures) {
+      console.log(chalk.red(`  • ${f.name} ${f.version}: ${f.error}`));
+    }
+  }
+
+  console.log('');
+  if (failures.length === 0) {
+    console.log(chalk.green('All downloads completed successfully!'));
+  } else if (successes.length === 0) {
+    console.log(chalk.red('All downloads failed.'));
+  } else {
+    console.log(chalk.yellow(`Completed with ${failures.length} failure(s).`));
+  }
 }
 
 async function main(): Promise<void> {
