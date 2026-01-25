@@ -10,6 +10,25 @@ export interface PublishResult {
   error?: string;
 }
 
+function getLatestNpmVersion(packageName: string): string | null {
+  try {
+    const result = execSync(`npm view ${packageName} version`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 15000,
+    });
+    return result.trim();
+  } catch {
+    return null;
+  }
+}
+
+function bumpPatchVersion(version: string): string {
+  const parts = version.split('.').map(Number);
+  parts[2]++;
+  return parts.join('.');
+}
+
 export class CliPublisher {
   constructor(
     private downloadsConfig: DownloadsConfig,
@@ -33,15 +52,18 @@ export class CliPublisher {
       const cliVersionsPath = `${this.cliPath}/versions.json`;
       writeFileSync(cliVersionsPath, JSON.stringify(versionsJson, null, 2));
 
-      // Read current CLI version
+      // Get latest version from npm (fallback to local if npm unreachable)
       const pkgPath = `${this.cliPath}/package.json`;
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-      const currentVersion = pkg.version;
+      const packageName = pkg.name;
 
-      // Bump patch version
-      const versionParts = currentVersion.split('.').map(Number);
-      versionParts[2]++;
-      const newVersion = versionParts.join('.');
+      console.log('[CliPublisher] Checking latest version on npm...');
+      const latestNpmVersion = getLatestNpmVersion(packageName);
+      const baseVersion = latestNpmVersion || pkg.version;
+      console.log(`[CliPublisher] Base version: ${baseVersion} (from ${latestNpmVersion ? 'npm' : 'local'})`);
+
+      // Bump patch version from the latest
+      const newVersion = bumpPatchVersion(baseVersion);
       pkg.version = newVersion;
       writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
 

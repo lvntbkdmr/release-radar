@@ -1,6 +1,6 @@
 {
   "name": "@lvnt/release-radar",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Monitor tool versions and notify via Telegram when updates are detected",
   "main": "dist/index.js",
   "bin": {
