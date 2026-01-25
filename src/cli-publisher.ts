@@ -1,6 +1,6 @@
 // src/cli-publisher.ts
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { generateVersionsJson } from './versions-generator.js';
 import type { DownloadsConfig } from './types.js';
 
@@ -29,10 +29,7 @@ export class CliPublisher {
       // Generate versions.json
       const versionsJson = generateVersionsJson(versions, this.downloadsConfig);
 
-      // Write to data/ for reference
-      writeFileSync('./data/cli-versions.json', JSON.stringify(versionsJson, null, 2));
-
-      // Copy to CLI package
+      // Write to CLI package
       const cliVersionsPath = `${this.cliPath}/versions.json`;
       writeFileSync(cliVersionsPath, JSON.stringify(versionsJson, null, 2));
 
@@ -48,10 +45,16 @@ export class CliPublisher {
       pkg.version = newVersion;
       writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
 
+      // Install dependencies (including devDependencies for TypeScript)
+      console.log('[CliPublisher] Installing dependencies...');
+      execSync('npm install', { cwd: this.cliPath, stdio: 'pipe' });
+
       // Build CLI
+      console.log('[CliPublisher] Building...');
       execSync('npm run build', { cwd: this.cliPath, stdio: 'pipe' });
 
       // Publish to npm
+      console.log('[CliPublisher] Publishing...');
       execSync('npm publish --access public', { cwd: this.cliPath, stdio: 'pipe' });
 
       console.log(`[CliPublisher] Published @lvnt/release-radar-cli v${newVersion}`);
