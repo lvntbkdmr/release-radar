@@ -1,6 +1,6 @@
 {
   "name": "@lvnt/release-radar-cli",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "description": "Interactive CLI for downloading tools through Nexus proxy",
   "main": "dist/index.js",
   "bin": {
@@ -26,6 +26,12 @@
   ],
   "author": "lvnt",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lvntbkdmr/release-radar.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/lvntbkdmr/release-radar#readme",
   "dependencies": {
     "chalk": "^5.3.0",
     "inquirer": "^9.2.12"
