@@ -46,15 +46,18 @@ async function runInteractive(): Promise<void> {
   const configManager = new ConfigManager();
   const tracker = new DownloadTracker();
 
+  // Check for updates first (before any prompts) unless --skip-update is passed
+  const skipUpdate = process.argv.includes('--skip-update');
+  if (!skipUpdate) {
+    await checkAndUpdate();
+  }
+
   // First run setup
   if (!configManager.isConfigured()) {
     const config = await promptSetup();
     configManager.save(config);
     console.log(chalk.green('\nConfiguration saved!\n'));
   }
-
-  // Check for updates and restart if needed
-  await checkAndUpdate();
 
   // Load data
   const config = configManager.load();
@@ -108,7 +111,8 @@ async function runInteractive(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const command = process.argv[2];
+  const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
+  const command = args[0];
 
   switch (command) {
     case 'status':
@@ -118,6 +122,11 @@ async function main(): Promise<void> {
       await runConfig();
       break;
     default:
+      // Check if stdin is a TTY for interactive mode
+      if (!process.stdin.isTTY) {
+        console.error(chalk.red('Error: Interactive mode requires a TTY. Use "status" command for non-interactive use.'));
+        process.exit(1);
+      }
       await runInteractive();
       break;
   }

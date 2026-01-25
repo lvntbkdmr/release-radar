@@ -15,6 +15,7 @@ function getLatestVersion(): string | null {
     const result = execSync('npm view @lvnt/release-radar-cli version', {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 10000, // 10 second timeout
     });
     return result.trim();
   } catch {
@@ -38,12 +39,15 @@ export async function checkAndUpdate(): Promise<boolean> {
   console.log(`Updating from ${current} to ${latest}...`);
 
   try {
-    execSync('npm update -g @lvnt/release-radar-cli', {
-      stdio: 'inherit',
+    // Use pipe instead of inherit to avoid messing with terminal state
+    const result = execSync('npm update -g @lvnt/release-radar-cli', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
+    if (result) console.log(result);
     console.log('Update complete. Restarting...\n');
 
-    // Restart self
+    // Restart self with a fresh terminal
     const child = spawn(process.argv[0], process.argv.slice(1), {
       detached: true,
       stdio: 'inherit',
