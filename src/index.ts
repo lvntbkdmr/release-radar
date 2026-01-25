@@ -57,8 +57,9 @@ try {
   console.log('No downloads.json found, CLI generation disabled');
 }
 
-// Data directory - use package root for now, could be made configurable
-const DATA_DIR = join(PKG_ROOT, 'data');
+// Data directory - use ~/.release-radar for user-writable storage
+const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '/tmp';
+const DATA_DIR = process.env.RELEASE_RADAR_DATA_DIR || join(HOME_DIR, '.release-radar');
 if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
 }
