@@ -85,6 +85,12 @@ export interface UpdaterConfig {
   chatId: string;
 }
 
+// Lock to prevent concurrent updates
+let updateInProgress = false;
+let lastUpdateVersion: string | null = null;
+let lastUpdateTime = 0;
+const UPDATE_COOLDOWN_MS = 60000; // 1 minute cooldown between updates
+
 export function startUpdater(config: UpdaterConfig): void {
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     // Only accept POST /webhook
@@ -126,13 +132,33 @@ export function startUpdater(config: UpdaterConfig): void {
       return;
     }
 
+    // Check if update is already in progress or recently completed for this version
+    const now = Date.now();
+    if (updateInProgress) {
+      console.log(`Ignoring release event for v${version} - update already in progress`);
+      res.writeHead(200);
+      res.end('OK (update in progress)');
+      return;
+    }
+
+    if (lastUpdateVersion === version && (now - lastUpdateTime) < UPDATE_COOLDOWN_MS) {
+      console.log(`Ignoring release event for v${version} - recently updated`);
+      res.writeHead(200);
+      res.end('OK (recently updated)');
+      return;
+    }
+
     // Respond immediately, update async
     res.writeHead(200);
     res.end('OK');
 
+    updateInProgress = true;
     console.log(`Received release event for v${version}, updating...`);
 
     const result = await executeUpdate();
+    updateInProgress = false;
+    lastUpdateVersion = version;
+    lastUpdateTime = Date.now();
 
     if (result.success) {
       await config.telegramBot.sendMessage(
