@@ -122,7 +122,7 @@ export class VsixMirror {
     version: string
   ): Promise<void> {
     const title = `Claude Code VSCode ${version}`;
-    const notes = `Mirrored from VS Code Marketplace for Nexus proxy access.\\n\\nPlatform: win32-x64`;
+    const notes = `Mirrored from VS Code Marketplace for Nexus proxy access.\n\nPlatform: win32-x64`;
 
     execSync(
       `gh release create "${tag}" "${vsixPath}#${filename}" ` +
