@@ -1,8 +1,19 @@
 {
+  "VSCode": {
+    "displayName": "VS Code",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "VSCode-{{VERSION}}-win-x64.msi",
+    "mirror": {
+      "sourceUrl": "https://update.code.visualstudio.com/latest/win32-x64/stable"
+    }
+  },
   "Claude Code VSCode": {
     "displayName": "Claude Code Extension",
     "downloadUrl": "{{MIRROR_URL}}",
-    "filename": "claude-code-{{VERSION}}-win32-x64.vsix"
+    "filename": "claude-code-{{VERSION}}-win32-x64.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api"
+    }
   },
   "Claude Code CLI": {
     "displayName": "Claude Code CLI",
