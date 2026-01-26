@@ -1,4 +1,9 @@
 {
+  "Claude Code VSCode": {
+    "displayName": "Claude Code Extension",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "claude-code-{{VERSION}}-win32-x64.vsix"
+  },
   "Claude Code CLI": {
     "displayName": "Claude Code CLI",
     "downloadUrl": "storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{{VERSION}}/win32-x64/claude.exe",
