@@ -15,11 +15,16 @@ export interface Config {
   tools: ToolConfig[];
 }
 
+export interface MirrorConfig {
+  sourceUrl: string;  // URL or "marketplace-api"
+}
+
 export interface DownloadConfigUrl {
   type?: 'download';  // default if not specified
   displayName: string;
   downloadUrl: string;  // Template with {{VERSION}} placeholder
   filename: string;     // Template with {{VERSION}} placeholder
+  mirror?: MirrorConfig;  // optional mirror config
 }
 
 export interface DownloadConfigNpm {
