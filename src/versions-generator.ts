@@ -14,7 +14,8 @@ function applyVersionPlaceholders(template: string, version: string): string {
 
 export function generateVersionsJson(
   versions: Record<string, string>,
-  downloads: DownloadsConfig
+  downloads: DownloadsConfig,
+  mirrorUrls: Record<string, string> = {}
 ): VersionsJson {
   const tools: VersionsJsonTool[] = [];
 
@@ -33,19 +34,40 @@ export function generateVersionsJson(
         package: downloadConfig.package,
       });
     } else {
-      // download type (default)
-      const downloadUrl = '{{NEXUS_URL}}/' +
-        applyVersionPlaceholders(downloadConfig.downloadUrl, version);
-      const filename = applyVersionPlaceholders(downloadConfig.filename, version);
+      // Check if this uses MIRROR_URL placeholder
+      if (downloadConfig.downloadUrl === '{{MIRROR_URL}}') {
+        const mirrorUrl = mirrorUrls[toolName];
+        if (!mirrorUrl) {
+          // Skip this tool - no mirror URL available
+          console.log(`[versions-generator] Skipping ${toolName}: no mirror URL available`);
+          continue;
+        }
+        const downloadUrl = '{{NEXUS_URL}}/' + mirrorUrl;
+        const filename = applyVersionPlaceholders(downloadConfig.filename, version);
 
-      tools.push({
-        name: toolName,
-        displayName: downloadConfig.displayName,
-        version,
-        publishedAt: new Date().toISOString(),
-        downloadUrl,
-        filename,
-      });
+        tools.push({
+          name: toolName,
+          displayName: downloadConfig.displayName,
+          version,
+          publishedAt: new Date().toISOString(),
+          downloadUrl,
+          filename,
+        });
+      } else {
+        // download type (default) with version template
+        const downloadUrl = '{{NEXUS_URL}}/' +
+          applyVersionPlaceholders(downloadConfig.downloadUrl, version);
+        const filename = applyVersionPlaceholders(downloadConfig.filename, version);
+
+        tools.push({
+          name: toolName,
+          displayName: downloadConfig.displayName,
+          version,
+          publishedAt: new Date().toISOString(),
+          downloadUrl,
+          filename,
+        });
+      }
     }
   }
 

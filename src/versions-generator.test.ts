@@ -100,4 +100,57 @@ describe('generateVersionsJson', () => {
     expect(ralphy.package).toBe('ralphy-cli');
     expect((ralphy as any).downloadUrl).toBeUndefined();
   });
+
+  it('uses mirrorUrls for MIRROR_URL placeholder', () => {
+    const versions: Record<string, string> = {
+      'Claude Code VSCode': '2.1.9',
+    };
+
+    const downloads: DownloadsConfig = {
+      'Claude Code VSCode': {
+        displayName: 'Claude Code Extension',
+        downloadUrl: '{{MIRROR_URL}}',
+        filename: 'claude-code-{{VERSION}}-win32-x64.vsix',
+      },
+    };
+
+    const mirrorUrls: Record<string, string> = {
+      'Claude Code VSCode': 'github.com/lvntbkdmr/apps/releases/download/claude-code-vsix-v2.1.9/claude-code-2.1.9-win32-x64.vsix',
+    };
+
+    const result = generateVersionsJson(versions, downloads, mirrorUrls);
+
+    expect(result.tools).toHaveLength(1);
+    const tool = result.tools[0] as VersionsJsonToolDownload;
+    expect(tool.downloadUrl).toBe(
+      '{{NEXUS_URL}}/github.com/lvntbkdmr/apps/releases/download/claude-code-vsix-v2.1.9/claude-code-2.1.9-win32-x64.vsix'
+    );
+    expect(tool.filename).toBe('claude-code-2.1.9-win32-x64.vsix');
+  });
+
+  it('skips tool with MIRROR_URL placeholder when no mirrorUrl available', () => {
+    const versions: Record<string, string> = {
+      'Claude Code VSCode': '2.1.9',
+      'Ninja': '1.12.0',
+    };
+
+    const downloads: DownloadsConfig = {
+      'Claude Code VSCode': {
+        displayName: 'Claude Code Extension',
+        downloadUrl: '{{MIRROR_URL}}',
+        filename: 'claude-code-{{VERSION}}-win32-x64.vsix',
+      },
+      'Ninja': {
+        displayName: 'Ninja',
+        downloadUrl: 'github.com/ninja/releases/{{VERSION}}/ninja.zip',
+        filename: 'ninja-{{VERSION}}.zip',
+      },
+    };
+
+    // No mirrorUrls provided for Claude Code VSCode
+    const result = generateVersionsJson(versions, downloads, {});
+
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0].name).toBe('Ninja');
+  });
 });
