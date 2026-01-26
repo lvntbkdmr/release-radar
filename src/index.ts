@@ -12,7 +12,7 @@ import { Notifier } from './notifier.js';
 import { Checker } from './checker.js';
 import { generateVersionsJson } from './versions-generator.js';
 import { CliPublisher } from './cli-publisher.js';
-import { VsixMirror } from './vsix-mirror.js';
+import { AssetMirror } from './asset-mirror.js';
 import type { Config, DownloadsConfig } from './types.js';
 
 // Get package directory for resolving config paths
@@ -113,8 +113,8 @@ const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 const storage = new Storage(join(DATA_DIR, 'versions.json'));
 const notifier = new Notifier(bot, validatedChatId);
 const cliPublisher = new CliPublisher(downloadsConfig, USER_CLI_DIR);
-const vsixMirror = new VsixMirror();
-const checker = new Checker(configData.tools, storage, notifier, vsixMirror);
+const assetMirror = new AssetMirror();
+const checker = new Checker(configData.tools, storage, notifier, assetMirror, downloadsConfig);
 
 // Track scheduled task for rescheduling
 let scheduledTask: ScheduledTask | null = null;
@@ -316,23 +316,52 @@ bot.onText(/\/publishcli/, async (msg) => {
   }
 });
 
-bot.onText(/\/mirrorvsix(?:\s+(.+))?/, async (msg, match) => {
+bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
   if (msg.chat.id.toString() !== validatedChatId) return;
 
-  const versionArg = match?.[1]?.trim();
-  const version = versionArg || storage.getVersion('Claude Code VSCode');
-
-  if (!version) {
-    await bot.sendMessage(validatedChatId, 'No version specified and no tracked version found. Usage: /mirrorvsix [version]');
+  const args = match?.[1]?.trim();
+  if (!args) {
+    await bot.sendMessage(validatedChatId, 'Usage: /mirror <toolname> [version]\nExample: /mirror VSCode\nExample: /mirror "Claude Code VSCode" 2.1.9');
     return;
   }
 
-  await bot.sendMessage(validatedChatId, `Mirroring Claude Code VSCode v${version}...`);
+  // Parse tool name and optional version
+  let toolName: string;
+  let version: string | null;
 
-  const result = await vsixMirror.mirror(version);
+  const quoteMatch = args.match(/^"([^"]+)"(?:\s+(.+))?$/);
+  if (quoteMatch) {
+    toolName = quoteMatch[1];
+    version = quoteMatch[2]?.trim() || null;
+  } else {
+    const parts = args.split(/\s+/);
+    toolName = parts[0];
+    version = parts[1] || null;
+  }
+
+  // Get download config for this tool
+  const downloadConfig = downloadsConfig[toolName];
+  if (!downloadConfig || downloadConfig.type === 'npm' || !('mirror' in downloadConfig) || !downloadConfig.mirror) {
+    await bot.sendMessage(validatedChatId, `Tool "${toolName}" is not configured for mirroring.`);
+    return;
+  }
+
+  // Get version if not provided
+  if (!version) {
+    version = storage.getVersion(toolName);
+  }
+
+  if (!version) {
+    await bot.sendMessage(validatedChatId, `No version specified and no tracked version found for "${toolName}".`);
+    return;
+  }
+
+  await bot.sendMessage(validatedChatId, `Mirroring ${toolName} v${version}...`);
+
+  const result = await assetMirror.mirror(toolName, version, downloadConfig.mirror, downloadConfig.filename);
 
   if (result.success) {
-    storage.setMirrorUrl('Claude Code VSCode', result.downloadUrl!);
+    storage.setMirrorUrl(toolName, result.downloadUrl!);
     await bot.sendMessage(validatedChatId, `✅ Mirrored successfully\nURL: ${result.downloadUrl}`);
   } else {
     await bot.sendMessage(validatedChatId, `❌ Mirror failed: ${result.error}`);
