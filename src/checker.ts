@@ -2,13 +2,15 @@
 import type { ToolConfig } from './types.js';
 import type { Storage } from './storage.js';
 import type { Notifier, UpdateInfo, FailureInfo } from './notifier.js';
+import type { VsixMirror } from './vsix-mirror.js';
 import { fetchVersion } from './fetchers/index.js';
 
 export class Checker {
   constructor(
     private tools: ToolConfig[],
     private storage: Storage,
-    private notifier: Notifier
+    private notifier: Notifier,
+    private vsixMirror?: VsixMirror
   ) {}
 
   async checkAll(): Promise<{ hasUpdates: boolean; updateCount: number }> {
@@ -26,6 +28,14 @@ export class Checker {
         } else if (oldVersion !== newVersion) {
           updates.push({ name: tool.name, oldVersion, newVersion });
           this.storage.setVersion(tool.name, newVersion);
+
+          // Mirror VSIX to GitHub if this is Claude Code VSCode
+          if (tool.name === 'Claude Code VSCode' && this.vsixMirror) {
+            const mirrorResult = await this.vsixMirror.mirror(newVersion);
+            if (mirrorResult.success && mirrorResult.downloadUrl) {
+              this.storage.setMirrorUrl(tool.name, mirrorResult.downloadUrl);
+            }
+          }
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
