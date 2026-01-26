@@ -64,4 +64,41 @@ describe('Storage', () => {
     const newStorage = new Storage(testPath);
     expect(newStorage.getVersion('Ninja')).toBe('1.12.0');
   });
+
+  it('getMirrorUrl returns null for unknown tool', () => {
+    expect(storage.getMirrorUrl('Unknown')).toBeNull();
+  });
+
+  it('getMirrorUrl returns stored mirror URL', () => {
+    const state = {
+      lastCheck: null,
+      versions: {},
+      mirrorUrls: { 'Claude Code VSCode': 'github.com/lvntbkdmr/apps/releases/download/v1/file.vsix' }
+    };
+    writeFileSync(testPath, JSON.stringify(state));
+    storage = new Storage(testPath);
+
+    expect(storage.getMirrorUrl('Claude Code VSCode')).toBe('github.com/lvntbkdmr/apps/releases/download/v1/file.vsix');
+  });
+
+  it('setMirrorUrl updates and persists', () => {
+    storage.setMirrorUrl('Claude Code VSCode', 'github.com/test/url.vsix');
+
+    const newStorage = new Storage(testPath);
+    expect(newStorage.getMirrorUrl('Claude Code VSCode')).toBe('github.com/test/url.vsix');
+  });
+
+  it('getAllMirrorUrls returns empty object when none set', () => {
+    expect(storage.getAllMirrorUrls()).toEqual({});
+  });
+
+  it('getAllMirrorUrls returns all stored mirror URLs', () => {
+    storage.setMirrorUrl('Tool1', 'url1');
+    storage.setMirrorUrl('Tool2', 'url2');
+
+    expect(storage.getAllMirrorUrls()).toEqual({
+      'Tool1': 'url1',
+      'Tool2': 'url2'
+    });
+  });
 });

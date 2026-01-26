@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, renameSync, existsSync } from 'fs';
 export interface StorageState {
   lastCheck: string | null;
   versions: Record<string, string>;
+  mirrorUrls?: Record<string, string>;
 }
 
 export class Storage {
@@ -42,5 +43,24 @@ export class Storage {
     state.versions[toolName] = version;
     state.lastCheck = new Date().toISOString();
     this.save(state);
+  }
+
+  getMirrorUrl(toolName: string): string | null {
+    const state = this.ensureLoaded();
+    return state.mirrorUrls?.[toolName] ?? null;
+  }
+
+  setMirrorUrl(toolName: string, url: string): void {
+    const state = this.ensureLoaded();
+    if (!state.mirrorUrls) {
+      state.mirrorUrls = {};
+    }
+    state.mirrorUrls[toolName] = url;
+    this.save(state);
+  }
+
+  getAllMirrorUrls(): Record<string, string> {
+    const state = this.ensureLoaded();
+    return state.mirrorUrls ?? {};
   }
 }
