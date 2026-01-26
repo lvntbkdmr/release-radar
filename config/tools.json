@@ -75,6 +75,16 @@
       "name": "Zed",
       "type": "github",
       "repo": "zed-industries/zed"
+    },
+    {
+      "name": "Claude Code Router",
+      "type": "npm",
+      "package": "@musistudio/claude-code-router"
+    },
+    {
+      "name": "PowerShell",
+      "type": "github",
+      "repo": "PowerShell/PowerShell"
     }
   ]
 }

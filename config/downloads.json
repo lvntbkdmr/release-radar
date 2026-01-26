@@ -68,5 +68,15 @@
     "type": "npm",
     "displayName": "Ralphy CLI",
     "package": "ralphy-cli"
+  },
+  "Claude Code Router": {
+    "type": "npm",
+    "displayName": "Claude Code Router",
+    "package": "@musistudio/claude-code-router"
+  },
+  "PowerShell": {
+    "displayName": "PowerShell",
+    "downloadUrl": "github.com/PowerShell/PowerShell/releases/download/v{{VERSION}}/PowerShell-{{VERSION}}-win-x64.msi",
+    "filename": "PowerShell-{{VERSION}}-win-x64.msi"
   }
 }
