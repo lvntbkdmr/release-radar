@@ -1,7 +1,7 @@
 // src/checker.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Checker } from './checker.js';
-import type { ToolConfig } from './types.js';
+import type { ToolConfig, DownloadsConfig } from './types.js';
 
 vi.mock('./fetchers/index.js', () => ({
   fetchVersion: vi.fn()
@@ -113,83 +113,110 @@ describe('Checker', () => {
     expect(result.updateCount).toBe(0);
   });
 
-  describe('VSIX mirroring', () => {
-    let mockVsixMirror: {
+  describe('Asset mirroring', () => {
+    let mockAssetMirror: {
       mirror: ReturnType<typeof vi.fn>;
     };
+    let downloadsConfig: DownloadsConfig;
 
     beforeEach(() => {
-      mockVsixMirror = {
-        mirror: vi.fn().mockResolvedValue({ success: true, downloadUrl: 'github.com/test/url.vsix' })
+      mockAssetMirror = {
+        mirror: vi.fn().mockResolvedValue({ success: true, downloadUrl: 'github.com/test/url' })
+      };
+      downloadsConfig = {
+        'VSCode': {
+          displayName: 'VS Code',
+          downloadUrl: '{{MIRROR_URL}}',
+          filename: 'VSCode-{{VERSION}}-win-x64.msi',
+          mirror: { sourceUrl: 'https://update.code.visualstudio.com/latest/win32-x64/stable' }
+        },
+        'Ninja': {
+          displayName: 'Ninja',
+          downloadUrl: 'github.com/ninja/releases/{{VERSION}}/ninja.zip',
+          filename: 'ninja-{{VERSION}}.zip'
+          // No mirror config
+        }
       };
     });
 
-    it('mirrors VSIX when Claude Code VSCode updates', async () => {
-      const vsCodeTool: ToolConfig = {
-        name: 'Claude Code VSCode',
-        type: 'vscode-marketplace',
-        extensionId: 'anthropic.claude-code'
-      };
+    it('mirrors asset when tool has mirror config and version updates', async () => {
+      const vscodeTool: ToolConfig = { name: 'VSCode', type: 'custom', customFetcher: 'vscode' };
       const checkerWithMirror = new Checker(
-        [vsCodeTool],
+        [vscodeTool],
         mockStorage as any,
         mockNotifier as any,
-        mockVsixMirror as any
+        mockAssetMirror as any,
+        downloadsConfig
       );
 
-      mockStorage.getVersion.mockReturnValue('2.1.8');
-      vi.mocked(fetchVersion).mockResolvedValue('2.1.9');
+      mockStorage.getVersion.mockReturnValue('1.95.0');
+      vi.mocked(fetchVersion).mockResolvedValue('1.96.0');
 
       await checkerWithMirror.checkAll();
 
-      expect(mockVsixMirror.mirror).toHaveBeenCalledWith('2.1.9');
-      expect(mockStorage.setMirrorUrl).toHaveBeenCalledWith('Claude Code VSCode', 'github.com/test/url.vsix');
+      expect(mockAssetMirror.mirror).toHaveBeenCalledWith(
+        'VSCode',
+        '1.96.0',
+        { sourceUrl: 'https://update.code.visualstudio.com/latest/win32-x64/stable' },
+        'VSCode-{{VERSION}}-win-x64.msi'
+      );
+      expect(mockStorage.setMirrorUrl).toHaveBeenCalledWith('VSCode', 'github.com/test/url');
+    });
+
+    it('does not mirror when tool has no mirror config', async () => {
+      const ninjaTool: ToolConfig = { name: 'Ninja', type: 'github', repo: 'ninja-build/ninja' };
+      const checkerWithMirror = new Checker(
+        [ninjaTool],
+        mockStorage as any,
+        mockNotifier as any,
+        mockAssetMirror as any,
+        downloadsConfig
+      );
+
+      mockStorage.getVersion.mockReturnValue('1.11.0');
+      vi.mocked(fetchVersion).mockResolvedValue('1.12.0');
+
+      await checkerWithMirror.checkAll();
+
+      expect(mockAssetMirror.mirror).not.toHaveBeenCalled();
     });
 
     it('does not mirror when version unchanged', async () => {
-      const vsCodeTool: ToolConfig = {
-        name: 'Claude Code VSCode',
-        type: 'vscode-marketplace',
-        extensionId: 'anthropic.claude-code'
-      };
+      const vscodeTool: ToolConfig = { name: 'VSCode', type: 'custom', customFetcher: 'vscode' };
       const checkerWithMirror = new Checker(
-        [vsCodeTool],
+        [vscodeTool],
         mockStorage as any,
         mockNotifier as any,
-        mockVsixMirror as any
+        mockAssetMirror as any,
+        downloadsConfig
       );
 
-      mockStorage.getVersion.mockReturnValue('2.1.9');
-      vi.mocked(fetchVersion).mockResolvedValue('2.1.9');
+      mockStorage.getVersion.mockReturnValue('1.96.0');
+      vi.mocked(fetchVersion).mockResolvedValue('1.96.0');
 
       await checkerWithMirror.checkAll();
 
-      expect(mockVsixMirror.mirror).not.toHaveBeenCalled();
+      expect(mockAssetMirror.mirror).not.toHaveBeenCalled();
     });
 
     it('continues if mirror fails', async () => {
-      const vsCodeTool: ToolConfig = {
-        name: 'Claude Code VSCode',
-        type: 'vscode-marketplace',
-        extensionId: 'anthropic.claude-code'
-      };
-      mockVsixMirror.mirror.mockResolvedValue({ success: false, error: 'network error' });
+      const vscodeTool: ToolConfig = { name: 'VSCode', type: 'custom', customFetcher: 'vscode' };
+      mockAssetMirror.mirror.mockResolvedValue({ success: false, error: 'network error' });
 
       const checkerWithMirror = new Checker(
-        [vsCodeTool],
+        [vscodeTool],
         mockStorage as any,
         mockNotifier as any,
-        mockVsixMirror as any
+        mockAssetMirror as any,
+        downloadsConfig
       );
 
-      mockStorage.getVersion.mockReturnValue('2.1.8');
-      vi.mocked(fetchVersion).mockResolvedValue('2.1.9');
+      mockStorage.getVersion.mockReturnValue('1.95.0');
+      vi.mocked(fetchVersion).mockResolvedValue('1.96.0');
 
       await checkerWithMirror.checkAll();
 
-      // Version should still be updated
-      expect(mockStorage.setVersion).toHaveBeenCalledWith('Claude Code VSCode', '2.1.9');
-      // But no mirror URL stored
+      expect(mockStorage.setVersion).toHaveBeenCalledWith('VSCode', '1.96.0');
       expect(mockStorage.setMirrorUrl).not.toHaveBeenCalled();
     });
   });
