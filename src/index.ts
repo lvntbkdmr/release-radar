@@ -12,6 +12,7 @@ import { Notifier } from './notifier.js';
 import { Checker } from './checker.js';
 import { generateVersionsJson } from './versions-generator.js';
 import { CliPublisher } from './cli-publisher.js';
+import { VsixMirror } from './vsix-mirror.js';
 import type { Config, DownloadsConfig } from './types.js';
 
 // Get package directory for resolving config paths
@@ -111,8 +112,9 @@ if (existsSync(PKG_CLI_DIR)) {
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 const storage = new Storage(join(DATA_DIR, 'versions.json'));
 const notifier = new Notifier(bot, validatedChatId);
-const checker = new Checker(configData.tools, storage, notifier);
 const cliPublisher = new CliPublisher(downloadsConfig, USER_CLI_DIR);
+const vsixMirror = new VsixMirror();
+const checker = new Checker(configData.tools, storage, notifier, vsixMirror);
 
 // Track scheduled task for rescheduling
 let scheduledTask: ScheduledTask | null = null;
@@ -145,7 +147,8 @@ function scheduleChecks(intervalHours: number): void {
     // Auto-publish CLI if updates were detected
     if (result.hasUpdates && cliPublisher.isConfigured()) {
       const state = storage.load();
-      const publishResult = await cliPublisher.publish(state.versions);
+      const mirrorUrls = storage.getAllMirrorUrls();
+      const publishResult = await cliPublisher.publish(state.versions, mirrorUrls);
       if (publishResult.success) {
         await bot.sendMessage(validatedChatId, `📦 CLI published: v${publishResult.version}`);
       }
@@ -166,7 +169,8 @@ bot.onText(/\/check/, async (msg) => {
   // Auto-publish CLI if updates were detected
   if (result.hasUpdates && cliPublisher.isConfigured()) {
     const state = storage.load();
-    const publishResult = await cliPublisher.publish(state.versions);
+    const mirrorUrls = storage.getAllMirrorUrls();
+    const publishResult = await cliPublisher.publish(state.versions, mirrorUrls);
     if (publishResult.success) {
       await bot.sendMessage(validatedChatId, `📦 CLI published: v${publishResult.version}`);
     } else {
@@ -299,15 +303,39 @@ bot.onText(/\/publishcli/, async (msg) => {
   }
 
   const state = storage.load();
+  const mirrorUrls = storage.getAllMirrorUrls();
   const preview = formatCliPreview(state.versions);
   await bot.sendMessage(validatedChatId, `📦 Publishing CLI...\n\n${preview}`);
 
-  const result = await cliPublisher.publish(state.versions);
+  const result = await cliPublisher.publish(state.versions, mirrorUrls);
 
   if (result.success) {
     await bot.sendMessage(validatedChatId, `✅ CLI published: v${result.version}`);
   } else {
     await bot.sendMessage(validatedChatId, `❌ CLI publish failed: ${result.error}`);
+  }
+});
+
+bot.onText(/\/mirrorvsix(?:\s+(.+))?/, async (msg, match) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  const versionArg = match?.[1]?.trim();
+  const version = versionArg || storage.getVersion('Claude Code VSCode');
+
+  if (!version) {
+    await bot.sendMessage(validatedChatId, 'No version specified and no tracked version found. Usage: /mirrorvsix [version]');
+    return;
+  }
+
+  await bot.sendMessage(validatedChatId, `Mirroring Claude Code VSCode v${version}...`);
+
+  const result = await vsixMirror.mirror(version);
+
+  if (result.success) {
+    storage.setMirrorUrl('Claude Code VSCode', result.downloadUrl!);
+    await bot.sendMessage(validatedChatId, `✅ Mirrored successfully\nURL: ${result.downloadUrl}`);
+  } else {
+    await bot.sendMessage(validatedChatId, `❌ Mirror failed: ${result.error}`);
   }
 });
 
