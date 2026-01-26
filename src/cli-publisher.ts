@@ -39,14 +39,17 @@ export class CliPublisher {
     return Object.keys(this.downloadsConfig).length > 0 && existsSync(this.cliPath);
   }
 
-  async publish(versions: Record<string, string>): Promise<PublishResult> {
+  async publish(
+    versions: Record<string, string>,
+    mirrorUrls: Record<string, string> = {}
+  ): Promise<PublishResult> {
     if (!this.isConfigured()) {
       return { success: false, error: 'CLI publisher not configured' };
     }
 
     try {
-      // Generate versions.json
-      const versionsJson = generateVersionsJson(versions, this.downloadsConfig);
+      // Generate versions.json with mirror URLs
+      const versionsJson = generateVersionsJson(versions, this.downloadsConfig, mirrorUrls);
 
       // Write to CLI package
       const cliVersionsPath = `${this.cliPath}/versions.json`;
