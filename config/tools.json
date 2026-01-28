@@ -85,6 +85,61 @@
       "name": "PowerShell",
       "type": "github",
       "repo": "PowerShell/PowerShell"
+    },
+    {
+      "name": "C/C++ Extension Pack",
+      "type": "vscode-marketplace",
+      "extensionId": "ms-vscode.cpptools-extension-pack"
+    },
+    {
+      "name": "C/C++ Themes",
+      "type": "vscode-marketplace",
+      "extensionId": "ms-vscode.cpptools-themes"
+    },
+    {
+      "name": "YAML",
+      "type": "vscode-marketplace",
+      "extensionId": "redhat.vscode-yaml"
+    },
+    {
+      "name": "Python",
+      "type": "vscode-marketplace",
+      "extensionId": "ms-python.python"
+    },
+    {
+      "name": "Python Debugger",
+      "type": "vscode-marketplace",
+      "extensionId": "ms-python.debugpy"
+    },
+    {
+      "name": "Python Environments",
+      "type": "vscode-marketplace",
+      "extensionId": "ms-python.vscode-python-envs"
+    },
+    {
+      "name": "Pylance",
+      "type": "vscode-marketplace",
+      "extensionId": "ms-python.vscode-pylance"
+    },
+    {
+      "name": "isort",
+      "type": "vscode-marketplace",
+      "extensionId": "ms-python.isort"
+    },
+    {
+      "name": "Go",
+      "type": "vscode-marketplace",
+      "extensionId": "golang.go"
+    },
+    {
+      "name": "GitHub Theme",
+      "type": "vscode-marketplace",
+      "extensionId": "github.github-vscode-theme"
+    },
+    {
+      "name": "Material Icon Theme",
+      "type": "vscode-marketplace",
+      "extensionId": "pkief.material-icon-theme"
     }
   ]
 }

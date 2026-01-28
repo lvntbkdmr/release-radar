@@ -17,6 +17,8 @@ export interface Config {
 
 export interface MirrorConfig {
   sourceUrl: string;  // URL or "marketplace-api"
+  extensionId?: string;  // Required when sourceUrl is "marketplace-api"
+  targetPlatform?: string;  // Optional: e.g., "win32-x64" for platform-specific extensions
 }
 
 export interface DownloadConfigUrl {

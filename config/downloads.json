@@ -12,7 +12,9 @@
     "downloadUrl": "{{MIRROR_URL}}",
     "filename": "claude-code-{{VERSION}}-win32-x64.vsix",
     "mirror": {
-      "sourceUrl": "marketplace-api"
+      "sourceUrl": "marketplace-api",
+      "extensionId": "anthropic.claude-code",
+      "targetPlatform": "win32-x64"
     }
   },
   "Claude Code CLI": {
@@ -89,5 +91,104 @@
     "displayName": "PowerShell",
     "downloadUrl": "github.com/PowerShell/PowerShell/releases/download/v{{VERSION}}/PowerShell-{{VERSION}}-win-x64.msi",
     "filename": "PowerShell-{{VERSION}}-win-x64.msi"
+  },
+  "C/C++ Extension Pack": {
+    "displayName": "C/C++ Extension Pack",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "cpptools-extension-pack-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "ms-vscode.cpptools-extension-pack"
+    }
+  },
+  "C/C++ Themes": {
+    "displayName": "C/C++ Themes",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "cpptools-themes-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "ms-vscode.cpptools-themes"
+    }
+  },
+  "YAML": {
+    "displayName": "YAML Extension",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "vscode-yaml-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "redhat.vscode-yaml"
+    }
+  },
+  "Python": {
+    "displayName": "Python Extension",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "python-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "ms-python.python"
+    }
+  },
+  "Python Debugger": {
+    "displayName": "Python Debugger",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "debugpy-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "ms-python.debugpy"
+    }
+  },
+  "Python Environments": {
+    "displayName": "Python Environments",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "vscode-python-envs-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "ms-python.vscode-python-envs"
+    }
+  },
+  "Pylance": {
+    "displayName": "Pylance",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "vscode-pylance-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "ms-python.vscode-pylance"
+    }
+  },
+  "isort": {
+    "displayName": "isort Extension",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "isort-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "ms-python.isort"
+    }
+  },
+  "Go": {
+    "displayName": "Go Extension",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "go-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "golang.go"
+    }
+  },
+  "GitHub Theme": {
+    "displayName": "GitHub Theme",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "github-vscode-theme-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "github.github-vscode-theme"
+    }
+  },
+  "Material Icon Theme": {
+    "displayName": "Material Icon Theme",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "material-icon-theme-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "pkief.material-icon-theme"
+    }
   }
 }

@@ -81,16 +81,20 @@ export class AssetMirror {
 
   private async getSourceUrl(config: MirrorConfig, version: string): Promise<string> {
     if (config.sourceUrl === 'marketplace-api') {
-      return this.getMarketplaceVsixUrl(version);
+      if (!config.extensionId) {
+        throw new Error('extensionId is required when sourceUrl is "marketplace-api"');
+      }
+      return this.getMarketplaceVsixUrl(config.extensionId, version, config.targetPlatform);
     }
     // For direct URLs, just return as-is (curl -L will follow redirects)
     return config.sourceUrl;
   }
 
-  private async getMarketplaceVsixUrl(version: string): Promise<string> {
-    const extensionId = 'anthropic.claude-code';
-    const targetPlatform = 'win32-x64';
-
+  private async getMarketplaceVsixUrl(
+    extensionId: string,
+    version: string,
+    targetPlatform?: string
+  ): Promise<string> {
     const query = JSON.stringify({
       filters: [{
         criteria: [{ filterType: 7, value: extensionId }],
@@ -109,12 +113,20 @@ export class AssetMirror {
     const data = JSON.parse(response);
 
     const versions = data.results?.[0]?.extensions?.[0]?.versions || [];
-    const targetVersion = versions.find(
-      (v: any) => v.version === version && v.targetPlatform === targetPlatform
-    );
+
+    // Find matching version - with or without platform filter
+    const targetVersion = versions.find((v: any) => {
+      if (v.version !== version) return false;
+      if (targetPlatform) {
+        return v.targetPlatform === targetPlatform;
+      }
+      // For universal extensions, targetPlatform is undefined/null
+      return !v.targetPlatform;
+    });
 
     if (!targetVersion) {
-      throw new Error(`Version ${version} for ${targetPlatform} not found in marketplace`);
+      const platformInfo = targetPlatform ? ` for ${targetPlatform}` : ' (universal)';
+      throw new Error(`Version ${version}${platformInfo} not found in marketplace for ${extensionId}`);
     }
 
     const vsixFile = targetVersion.files?.find(
@@ -122,7 +134,7 @@ export class AssetMirror {
     );
 
     if (!vsixFile?.source) {
-      throw new Error('VSIX download URL not found in marketplace response');
+      throw new Error(`VSIX download URL not found in marketplace response for ${extensionId}`);
     }
 
     return vsixFile.source;

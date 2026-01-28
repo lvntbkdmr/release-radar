@@ -16,7 +16,7 @@ describe('AssetMirror', () => {
   let mirror: AssetMirror;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mirror = new AssetMirror();
   });
 
@@ -91,13 +91,68 @@ describe('AssetMirror', () => {
       vi.mocked(existsSync).mockReturnValue(true);
 
       const result = await mirror.mirror('Claude Code VSCode', '2.1.9', {
-        sourceUrl: 'marketplace-api'
+        sourceUrl: 'marketplace-api',
+        extensionId: 'anthropic.claude-code',
+        targetPlatform: 'win32-x64'
       }, 'claude-code-{{VERSION}}-win32-x64.vsix');
 
       expect(result.success).toBe(true);
       expect(result.downloadUrl).toBe(
         'github.com/lvntbkdmr/apps/releases/download/claude-code-vscode-v2.1.9/claude-code-2.1.9-win32-x64.vsix'
       );
+    });
+
+    it('handles universal marketplace extensions without targetPlatform', async () => {
+      const marketplaceResponse = JSON.stringify({
+        results: [{
+          extensions: [{
+            versions: [{
+              version: '1.2.3',
+              files: [{
+                assetType: 'Microsoft.VisualStudio.Services.VSIXPackage',
+                source: 'https://marketplace.visualstudio.com/vsix/download'
+              }]
+            }]
+          }]
+        }]
+      });
+
+      // 1. gh release view fails
+      vi.mocked(execSync).mockImplementationOnce(() => {
+        throw new Error('release not found');
+      });
+      // 2. curl marketplace query succeeds
+      vi.mocked(execSync).mockReturnValueOnce(marketplaceResponse);
+      // 3. curl download succeeds
+      vi.mocked(execSync).mockReturnValueOnce('');
+      // 4. gh release create succeeds
+      vi.mocked(execSync).mockReturnValueOnce('');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+
+      const result = await mirror.mirror('GitHub Theme', '1.2.3', {
+        sourceUrl: 'marketplace-api',
+        extensionId: 'github.github-vscode-theme'
+      }, 'github-vscode-theme-{{VERSION}}.vsix');
+
+      expect(result.success).toBe(true);
+      expect(result.downloadUrl).toBe(
+        'github.com/lvntbkdmr/apps/releases/download/github-theme-v1.2.3/github-vscode-theme-1.2.3.vsix'
+      );
+    });
+
+    it('fails when extensionId is missing for marketplace-api', async () => {
+      // gh release view fails
+      vi.mocked(execSync).mockImplementationOnce(() => {
+        throw new Error('release not found');
+      });
+
+      const result = await mirror.mirror('Test Extension', '1.0.0', {
+        sourceUrl: 'marketplace-api'
+      }, 'test-{{VERSION}}.vsix');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('extensionId is required');
     });
 
     it('successfully mirrors direct URL through full flow', async () => {
