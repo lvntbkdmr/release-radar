@@ -65,4 +65,22 @@ export class Storage {
     const state = this.ensureLoaded();
     return state.mirrorUrls ?? {};
   }
+
+  deleteVersion(toolName: string): boolean {
+    const state = this.ensureLoaded();
+    if (toolName in state.versions) {
+      delete state.versions[toolName];
+      if (state.mirrorUrls && toolName in state.mirrorUrls) {
+        delete state.mirrorUrls[toolName];
+      }
+      this.save(state);
+      return true;
+    }
+    return false;
+  }
+
+  getAllVersions(): Record<string, string> {
+    const state = this.ensureLoaded();
+    return state.versions;
+  }
 }

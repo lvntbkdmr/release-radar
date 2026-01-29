@@ -572,6 +572,41 @@ bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
   }
 });
 
+bot.onText(/\/resetversion(?:\s+(.+))?/, async (msg, match) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  const toolName = match?.[1]?.trim();
+  if (!toolName) {
+    await bot.sendMessage(validatedChatId, 'Usage: /resetversion <toolname>\nExample: /resetversion Python\n\nThis clears the stored version so the next /check will re-fetch it.');
+    return;
+  }
+
+  const deleted = storage.deleteVersion(toolName);
+  if (deleted) {
+    await bot.sendMessage(validatedChatId, `✅ Reset "${toolName}". Run /check to fetch the current version.`);
+  } else {
+    await bot.sendMessage(validatedChatId, `Tool "${toolName}" not found in storage.`);
+  }
+});
+
+bot.onText(/\/resetall/, async (msg) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  const versions = storage.getAllVersions();
+  const toolNames = Object.keys(versions);
+
+  if (toolNames.length === 0) {
+    await bot.sendMessage(validatedChatId, 'No versions stored.');
+    return;
+  }
+
+  for (const toolName of toolNames) {
+    storage.deleteVersion(toolName);
+  }
+
+  await bot.sendMessage(validatedChatId, `✅ Reset ${toolNames.length} tools. Run /check to re-fetch all versions.`);
+});
+
 // Start scheduled checks
 scheduleChecks();
 
