@@ -166,12 +166,8 @@
   },
   "Go": {
     "displayName": "Go Extension",
-    "downloadUrl": "{{MIRROR_URL}}",
-    "filename": "go-{{VERSION}}.vsix",
-    "mirror": {
-      "sourceUrl": "marketplace-api",
-      "extensionId": "golang.go"
-    }
+    "downloadUrl": "github.com/golang/vscode-go/releases/download/v{{VERSION}}/go-{{VERSION}}.vsix",
+    "filename": "go-{{VERSION}}.vsix"
   },
   "GitHub Theme": {
     "displayName": "GitHub Theme",
@@ -184,11 +180,7 @@
   },
   "Material Icon Theme": {
     "displayName": "Material Icon Theme",
-    "downloadUrl": "{{MIRROR_URL}}",
-    "filename": "material-icon-theme-{{VERSION}}.vsix",
-    "mirror": {
-      "sourceUrl": "marketplace-api",
-      "extensionId": "pkief.material-icon-theme"
-    }
+    "downloadUrl": "github.com/material-extensions/vscode-material-icon-theme/releases/download/v{{VERSION}}/material-icon-theme-{{VERSION}}.vsix",
+    "filename": "material-icon-theme-{{VERSION}}.vsix"
   }
 }

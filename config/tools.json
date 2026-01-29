@@ -130,8 +130,8 @@
     },
     {
       "name": "Go",
-      "type": "vscode-marketplace",
-      "extensionId": "golang.go"
+      "type": "github",
+      "repo": "golang/vscode-go"
     },
     {
       "name": "GitHub Theme",
@@ -140,8 +140,8 @@
     },
     {
       "name": "Material Icon Theme",
-      "type": "vscode-marketplace",
-      "extensionId": "pkief.material-icon-theme"
+      "type": "github",
+      "repo": "material-extensions/vscode-material-icon-theme"
     }
   ]
 }
