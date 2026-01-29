@@ -148,11 +148,10 @@
   "Pylance": {
     "displayName": "Pylance",
     "downloadUrl": "{{MIRROR_URL}}",
-    "filename": "vscode-pylance-{{VERSION}}-win32-x64.vsix",
+    "filename": "vscode-pylance-{{VERSION}}.vsix",
     "mirror": {
       "sourceUrl": "marketplace-api",
-      "extensionId": "ms-python.vscode-pylance",
-      "targetPlatform": "win32-x64"
+      "extensionId": "ms-python.vscode-pylance"
     }
   },
   "isort": {
