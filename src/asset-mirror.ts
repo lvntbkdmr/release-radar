@@ -27,13 +27,32 @@ export class AssetMirror {
   private repo = 'lvntbkdmr/apps';
 
   /**
+   * Delete a release by tag
+   */
+  async deleteRelease(tag: string): Promise<boolean> {
+    try {
+      execSync(`gh release delete ${tag} --repo ${this.repo} --yes`, {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      console.log(`[AssetMirror] Deleted release ${tag}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Mirror a single tool (legacy method, still used for /mirror command)
+   * @param force - If true, delete existing release and re-mirror
    */
   async mirror(
     toolName: string,
     version: string,
     config: MirrorConfig,
-    filenameTemplate: string
+    filenameTemplate: string,
+    force: boolean = false
   ): Promise<MirrorResult> {
     const tag = this.buildTag(toolName, version);
     const filename = this.applyVersion(filenameTemplate, version);
@@ -42,8 +61,13 @@ export class AssetMirror {
     try {
       // Check if release already exists
       if (await this.releaseExists(tag)) {
-        console.log(`[AssetMirror] Release ${tag} already exists, skipping`);
-        return { success: true, downloadUrl };
+        if (force) {
+          console.log(`[AssetMirror] Force mode: deleting existing release ${tag}...`);
+          await this.deleteRelease(tag);
+        } else {
+          console.log(`[AssetMirror] Release ${tag} already exists, skipping`);
+          return { success: true, downloadUrl };
+        }
       }
 
       // Get actual source URL

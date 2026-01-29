@@ -525,20 +525,24 @@ bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
 
   const args = match?.[1]?.trim();
   if (!args) {
-    await bot.sendMessage(validatedChatId, 'Usage: /mirror <toolname> [version]\nExample: /mirror VSCode\nExample: /mirror "Claude Code VSCode" 2.1.9');
+    await bot.sendMessage(validatedChatId, 'Usage: /mirror <toolname> [version] [--force]\nExample: /mirror VSCode\nExample: /mirror VSCode --force\nExample: /mirror "Claude Code VSCode" 2.1.9\n\n--force: Delete existing release and re-mirror');
     return;
   }
+
+  // Check for --force flag
+  const force = args.includes('--force') || args.includes('-f');
+  const argsWithoutForce = args.replace(/\s*--(force|f)\s*/g, ' ').replace(/\s+-f\s*/g, ' ').trim();
 
   // Parse tool name and optional version
   let toolName: string;
   let version: string | null;
 
-  const quoteMatch = args.match(/^"([^"]+)"(?:\s+(.+))?$/);
+  const quoteMatch = argsWithoutForce.match(/^"([^"]+)"(?:\s+(.+))?$/);
   if (quoteMatch) {
     toolName = quoteMatch[1];
     version = quoteMatch[2]?.trim() || null;
   } else {
-    const parts = args.split(/\s+/);
+    const parts = argsWithoutForce.split(/\s+/);
     toolName = parts[0];
     version = parts[1] || null;
   }
@@ -560,9 +564,10 @@ bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
     return;
   }
 
-  await bot.sendMessage(validatedChatId, `Mirroring ${toolName} v${version}...`);
+  const forceLabel = force ? ' (force)' : '';
+  await bot.sendMessage(validatedChatId, `Mirroring ${toolName} v${version}${forceLabel}...`);
 
-  const result = await assetMirror.mirror(toolName, version, downloadConfig.mirror, downloadConfig.filename);
+  const result = await assetMirror.mirror(toolName, version, downloadConfig.mirror, downloadConfig.filename, force);
 
   if (result.success) {
     storage.setMirrorUrl(toolName, result.downloadUrl!);
