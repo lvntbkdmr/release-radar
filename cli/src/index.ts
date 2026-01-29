@@ -7,7 +7,7 @@ import { DownloadTracker } from './tracker.js';
 import { loadVersions } from './versions.js';
 import { checkAndUpdate } from './updater.js';
 import { downloadFile, updateNpmPackage } from './downloader.js';
-import { promptSetup, promptToolSelection, renderTable, type ToolChoice, type TableRow } from './ui.js';
+import { promptSetup, promptToolSelection, renderTable, isVscodeExtension, type ToolChoice, type TableRow } from './ui.js';
 import { isNpmTool } from './types.js';
 
 function getVersion(): string {
@@ -89,6 +89,7 @@ async function showStatus(): Promise<void> {
       downloadedVersion: record?.version ?? '-',
       status,
       type: isNpmTool(tool) ? 'npm' : 'download',
+      category: isVscodeExtension(tool) ? 'vscode-extension' : 'tool',
     };
   });
 

@@ -226,7 +226,7 @@ export function renderTable(rows: TableRow[]): void {
   }
 }
 
-function isVscodeExtension(tool: VersionsJsonTool): boolean {
+export function isVscodeExtension(tool: VersionsJsonTool): boolean {
   if (isNpmTool(tool)) return false;
   // Check if filename ends with .vsix
   return tool.filename.toLowerCase().endsWith('.vsix');
