@@ -21,10 +21,12 @@ export class Storage {
 
   load(): StorageState {
     if (!existsSync(this.filePath)) {
-      return { lastCheck: null, versions: {} };
+      this.state = { lastCheck: null, versions: {} };
+    } else {
+      const content = readFileSync(this.filePath, 'utf-8');
+      this.state = JSON.parse(content);
     }
-    const content = readFileSync(this.filePath, 'utf-8');
-    return JSON.parse(content);
+    return this.state!;
   }
 
   save(state: StorageState): void {
