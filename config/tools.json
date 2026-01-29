@@ -100,8 +100,8 @@
     },
     {
       "name": "YAML",
-      "type": "vscode-marketplace",
-      "extensionId": "redhat.vscode-yaml"
+      "type": "github",
+      "repo": "redhat-developer/vscode-yaml"
     },
     {
       "name": "Python",

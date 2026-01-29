@@ -112,12 +112,8 @@
   },
   "YAML": {
     "displayName": "YAML Extension",
-    "downloadUrl": "{{MIRROR_URL}}",
-    "filename": "vscode-yaml-{{VERSION}}.vsix",
-    "mirror": {
-      "sourceUrl": "marketplace-api",
-      "extensionId": "redhat.vscode-yaml"
-    }
+    "downloadUrl": "github.com/redhat-developer/vscode-yaml/releases/download/{{VERSION}}/vscode-yaml-{{VERSION}}.vsix",
+    "filename": "vscode-yaml-{{VERSION}}.vsix"
   },
   "Python": {
     "displayName": "Python Extension",
