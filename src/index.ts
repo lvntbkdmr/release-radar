@@ -529,20 +529,23 @@ bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
     return;
   }
 
-  // Check for --force flag
-  const force = args.includes('--force') || args.includes('-f');
-  const argsWithoutForce = args.replace(/\s*--(force|f)\s*/g, ' ').replace(/\s+-f\s*/g, ' ').trim();
+  // Check for --force flag and remove it from args
+  const force = /\s*--force\b/.test(args) || /\s+-f\b/.test(args);
+  const argsWithoutForce = args
+    .replace(/\s*--force\b/g, '')
+    .replace(/\s+-f\b/g, '')
+    .trim();
 
   // Parse tool name and optional version
   let toolName: string;
-  let version: string | null;
+  let version: string | null = null;
 
-  const quoteMatch = argsWithoutForce.match(/^"([^"]+)"(?:\s+(.+))?$/);
+  const quoteMatch = argsWithoutForce.match(/^"([^"]+)"(?:\s+(\S+))?$/);
   if (quoteMatch) {
     toolName = quoteMatch[1];
-    version = quoteMatch[2]?.trim() || null;
+    version = quoteMatch[2] || null;
   } else {
-    const parts = argsWithoutForce.split(/\s+/);
+    const parts = argsWithoutForce.split(/\s+/).filter(p => p.length > 0);
     toolName = parts[0];
     version = parts[1] || null;
   }
