@@ -455,6 +455,71 @@ bot.onText(/\/publishcli/, async (msg) => {
   }
 });
 
+bot.onText(/\/mirrorall/, async (msg) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  // Find all tools that need mirroring (have mirror config and use {{MIRROR_URL}})
+  const mirrorItems: Array<{
+    toolName: string;
+    version: string;
+    config: import('./types.js').MirrorConfig;
+    filenameTemplate: string;
+  }> = [];
+
+  for (const [toolName, config] of Object.entries(downloadsConfig)) {
+    if (config.type === 'npm' || !('mirror' in config) || !config.mirror) continue;
+    if (config.downloadUrl !== '{{MIRROR_URL}}') continue;
+
+    const version = storage.getVersion(toolName);
+    if (!version) {
+      console.log(`[mirrorall] Skipping ${toolName}: no tracked version`);
+      continue;
+    }
+
+    mirrorItems.push({
+      toolName,
+      version,
+      config: config.mirror,
+      filenameTemplate: config.filename,
+    });
+  }
+
+  if (mirrorItems.length === 0) {
+    await bot.sendMessage(validatedChatId, 'No tools configured for mirroring (or no tracked versions).');
+    return;
+  }
+
+  const toolList = mirrorItems.map(i => `• ${i.toolName} v${i.version}`).join('\n');
+  await bot.sendMessage(validatedChatId, `🔄 Mirroring ${mirrorItems.length} tools...\n\n${toolList}`);
+
+  const result = await assetMirror.mirrorBatch(mirrorItems);
+
+  // Update storage with successful mirrors
+  let successCount = 0;
+  let failCount = 0;
+  const failures: string[] = [];
+
+  for (const [toolName, mirrorResult] of result.results) {
+    if (mirrorResult.success && mirrorResult.downloadUrl) {
+      storage.setMirrorUrl(toolName, mirrorResult.downloadUrl);
+      successCount++;
+    } else {
+      failCount++;
+      failures.push(`• ${toolName}: ${mirrorResult.error || 'Unknown error'}`);
+    }
+  }
+
+  let message = `✅ Mirrored ${successCount}/${mirrorItems.length} tools`;
+  if (result.tag) {
+    message += `\nRelease: ${result.tag}`;
+  }
+  if (failCount > 0) {
+    message += `\n\n❌ ${failCount} failed:\n${failures.join('\n')}`;
+  }
+
+  await bot.sendMessage(validatedChatId, message);
+});
+
 bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
   if (msg.chat.id.toString() !== validatedChatId) return;
 
