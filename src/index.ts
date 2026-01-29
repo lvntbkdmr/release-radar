@@ -13,7 +13,7 @@ import { Checker } from './checker.js';
 import { generateVersionsJson } from './versions-generator.js';
 import { CliPublisher } from './cli-publisher.js';
 import { AssetMirror } from './asset-mirror.js';
-import type { Config, DownloadsConfig } from './types.js';
+import type { Config, DownloadsConfig, ScheduleMode } from './types.js';
 
 // Get package directory for resolving config paths
 const __filename = fileURLToPath(import.meta.url);
@@ -121,7 +121,17 @@ let scheduledTask: ScheduledTask | null = null;
 let lastCheckTime: Date | null = null;
 let nextCheckTime: Date | null = null;
 
-function calculateNextCheckTime(intervalHours: number): Date {
+// Parse HH:MM time string
+function parseTime(timeStr: string): { hour: number; minute: number } | null {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = parseInt(match[1], 10);
+  const minute = parseInt(match[2], 10);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+}
+
+function calculateNextCheckTimeInterval(intervalHours: number): Date {
   const now = new Date();
   const next = new Date(now);
   next.setMinutes(0, 0, 0);
@@ -132,29 +142,76 @@ function calculateNextCheckTime(intervalHours: number): Date {
   return next;
 }
 
-function scheduleChecks(intervalHours: number): void {
+function calculateNextCheckTimeDaily(timeStr: string): Date {
+  const parsed = parseTime(timeStr);
+  if (!parsed) {
+    // Fallback to 6am if invalid
+    return calculateNextCheckTimeDaily('06:00');
+  }
+  
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(parsed.hour, parsed.minute, 0, 0);
+  
+  // If the time has passed today, schedule for tomorrow
+  if (next <= now) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+}
+
+function calculateNextCheckTime(): Date {
+  const mode = configData.scheduleMode || 'interval';
+  if (mode === 'daily') {
+    return calculateNextCheckTimeDaily(configData.dailyCheckTime || '06:00');
+  }
+  return calculateNextCheckTimeInterval(configData.checkIntervalHours);
+}
+
+async function runScheduledCheck(): Promise<void> {
+  console.log(`[${new Date().toISOString()}] Running scheduled check`);
+  lastCheckTime = new Date();
+  const result = await checker.checkAll();
+  nextCheckTime = calculateNextCheckTime();
+
+  // Auto-publish CLI if updates were detected
+  if (result.hasUpdates && cliPublisher.isConfigured()) {
+    const state = storage.load();
+    const mirrorUrls = storage.getAllMirrorUrls();
+    const publishResult = await cliPublisher.publish(state.versions, mirrorUrls);
+    if (publishResult.success) {
+      await bot.sendMessage(validatedChatId, `📦 CLI published: v${publishResult.version}`);
+    }
+  }
+}
+
+function scheduleChecks(): void {
   if (scheduledTask) {
     scheduledTask.stop();
   }
-  nextCheckTime = calculateNextCheckTime(intervalHours);
-  const cronExpression = `0 */${intervalHours} * * *`;
-  scheduledTask = cron.schedule(cronExpression, async () => {
-    console.log(`[${new Date().toISOString()}] Running scheduled check`);
-    lastCheckTime = new Date();
-    const result = await checker.checkAll();
-    nextCheckTime = calculateNextCheckTime(intervalHours);
 
-    // Auto-publish CLI if updates were detected
-    if (result.hasUpdates && cliPublisher.isConfigured()) {
-      const state = storage.load();
-      const mirrorUrls = storage.getAllMirrorUrls();
-      const publishResult = await cliPublisher.publish(state.versions, mirrorUrls);
-      if (publishResult.success) {
-        await bot.sendMessage(validatedChatId, `📦 CLI published: v${publishResult.version}`);
-      }
-    }
-  });
-  console.log(`Scheduled checks every ${intervalHours} hours`);
+  const mode = configData.scheduleMode || 'interval';
+  let cronExpression: string;
+
+  if (mode === 'daily') {
+    const timeStr = configData.dailyCheckTime || '06:00';
+    const parsed = parseTime(timeStr);
+    const hour = parsed?.hour ?? 6;
+    const minute = parsed?.minute ?? 0;
+    cronExpression = `${minute} ${hour} * * *`;
+    console.log(`Scheduled daily check at ${timeStr}`);
+  } else {
+    const intervalHours = configData.checkIntervalHours;
+    cronExpression = `0 */${intervalHours} * * *`;
+    console.log(`Scheduled checks every ${intervalHours} hours`);
+  }
+
+  nextCheckTime = calculateNextCheckTime();
+  scheduledTask = cron.schedule(cronExpression, runScheduledCheck);
+}
+
+function saveConfig(): void {
+  writeFileSync(CONFIG_PATH, JSON.stringify(configData, null, 2));
 }
 
 // Bot commands
@@ -164,7 +221,7 @@ bot.onText(/\/check/, async (msg) => {
   await bot.sendMessage(validatedChatId, 'Checking for updates...');
   lastCheckTime = new Date();
   const result = await checker.checkAll();
-  nextCheckTime = calculateNextCheckTime(configData.checkIntervalHours);
+  nextCheckTime = calculateNextCheckTime();
 
   // Auto-publish CLI if updates were detected
   if (result.hasUpdates && cliPublisher.isConfigured()) {
@@ -236,14 +293,96 @@ bot.onText(/\/setinterval(?:\s+(\d+))?/, async (msg, match) => {
     return;
   }
 
-  // Update config
+  // Update config (also switch to interval mode)
   configData.checkIntervalHours = hours;
-  writeFileSync(CONFIG_PATH, JSON.stringify(configData, null, 2));
+  configData.scheduleMode = 'interval';
+  saveConfig();
 
   // Reschedule
-  scheduleChecks(hours);
+  scheduleChecks();
 
-  await bot.sendMessage(validatedChatId, `Check interval updated to every ${hours} hours`);
+  await bot.sendMessage(validatedChatId, `Check interval updated to every ${hours} hours (interval mode)`);
+});
+
+// /schedule - show current schedule configuration
+bot.onText(/\/schedule$/, async (msg) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  const mode = configData.scheduleMode || 'interval';
+  let message: string;
+
+  if (mode === 'daily') {
+    const time = configData.dailyCheckTime || '06:00';
+    message = `📅 Schedule: Daily at ${time}`;
+  } else {
+    message = `🔄 Schedule: Every ${configData.checkIntervalHours} hours`;
+  }
+
+  // Add next check info
+  if (nextCheckTime) {
+    const mins = Math.round((nextCheckTime.getTime() - Date.now()) / 60000);
+    if (mins > 0) {
+      const hours = Math.floor(mins / 60);
+      const remainingMins = mins % 60;
+      message += `\nNext check: in ${hours > 0 ? hours + 'h ' : ''}${remainingMins}m`;
+    } else {
+      message += '\nNext check: soon';
+    }
+  }
+
+  await bot.sendMessage(validatedChatId, message);
+});
+
+// /settime <HH:MM> - set daily check time
+bot.onText(/\/settime(?:\s+(.+))?/, async (msg, match) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  const timeStr = match?.[1]?.trim();
+  if (!timeStr) {
+    await bot.sendMessage(validatedChatId, 'Usage: /settime <HH:MM>\nExample: /settime 06:00');
+    return;
+  }
+
+  const parsed = parseTime(timeStr);
+  if (!parsed) {
+    await bot.sendMessage(validatedChatId, 'Invalid time format. Use HH:MM (24-hour), e.g., 06:00 or 18:30');
+    return;
+  }
+
+  // Update config and switch to daily mode
+  configData.dailyCheckTime = timeStr;
+  configData.scheduleMode = 'daily';
+  saveConfig();
+
+  // Reschedule
+  scheduleChecks();
+
+  await bot.sendMessage(validatedChatId, `✅ Daily check scheduled at ${timeStr}`);
+});
+
+// /setmode <daily|interval> - switch schedule mode
+bot.onText(/\/setmode(?:\s+(.+))?/, async (msg, match) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  const modeArg = match?.[1]?.trim().toLowerCase();
+  if (!modeArg || !['daily', 'interval'].includes(modeArg)) {
+    await bot.sendMessage(validatedChatId, 'Usage: /setmode <daily|interval>\n\n• daily - check once per day at configured time\n• interval - check every N hours');
+    return;
+  }
+
+  const newMode = modeArg as 'daily' | 'interval';
+  configData.scheduleMode = newMode;
+  saveConfig();
+
+  // Reschedule
+  scheduleChecks();
+
+  if (newMode === 'daily') {
+    const time = configData.dailyCheckTime || '06:00';
+    await bot.sendMessage(validatedChatId, `📅 Switched to daily mode. Checking at ${time}\n\nUse /settime to change the time.`);
+  } else {
+    await bot.sendMessage(validatedChatId, `🔄 Switched to interval mode. Checking every ${configData.checkIntervalHours} hours\n\nUse /setinterval to change the interval.`);
+  }
 });
 
 bot.onText(/\/generate/, async (msg) => {
@@ -369,7 +508,12 @@ bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
 });
 
 // Start scheduled checks
-scheduleChecks(configData.checkIntervalHours);
+scheduleChecks();
 
-console.log(`ReleaseRadar started. Checking every ${configData.checkIntervalHours} hours.`);
+const mode = configData.scheduleMode || 'interval';
+if (mode === 'daily') {
+  console.log(`ReleaseRadar started. Daily check at ${configData.dailyCheckTime || '06:00'}.`);
+} else {
+  console.log(`ReleaseRadar started. Checking every ${configData.checkIntervalHours} hours.`);
+}
 console.log(`Tracking ${configData.tools.length} tools.`);

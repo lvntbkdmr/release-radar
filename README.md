@@ -113,10 +113,12 @@ TELEGRAM_CHAT_ID=your_chat_id_here
 
 ### Tools Configuration
 
-Edit `config/tools.json` to add/remove tools:
+Edit `config/tools.json` to add/remove tools and configure scheduling:
 
 ```json
 {
+  "scheduleMode": "daily",
+  "dailyCheckTime": "06:00",
   "checkIntervalHours": 6,
   "tools": [
     {
@@ -127,6 +129,14 @@ Edit `config/tools.json` to add/remove tools:
   ]
 }
 ```
+
+#### Schedule Options
+
+| Field | Values | Description |
+|-------|--------|-------------|
+| `scheduleMode` | `"daily"` or `"interval"` | Check once per day or every N hours |
+| `dailyCheckTime` | `"HH:MM"` | Time for daily check (24-hour format, e.g., `"06:00"`) |
+| `checkIntervalHours` | `1-24` | Hours between checks (interval mode) |
 
 #### Tool Types
 
@@ -169,8 +179,11 @@ Placeholders:
 |---------|-------------|
 | `/check` | Manually trigger version check (auto-publishes CLI if updates found) |
 | `/status` | Show all tracked versions + last/next check times |
-| `/interval` | Show current check interval |
-| `/setinterval <hours>` | Set check interval (1-24 hours) |
+| `/schedule` | Show current schedule mode and next check time |
+| `/settime <HH:MM>` | Set daily check time (e.g., `/settime 06:00`) and switch to daily mode |
+| `/setmode <daily\|interval>` | Switch between daily and interval modes |
+| `/interval` | Show current check interval (interval mode) |
+| `/setinterval <hours>` | Set check interval (1-24 hours) and switch to interval mode |
 | `/generate` | Generate versions.json file locally |
 | `/clipreview` | Preview tools/versions that will be included in CLI |
 | `/publishcli` | Manually publish CLI with current tracked versions |

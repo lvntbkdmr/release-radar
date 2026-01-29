@@ -132,21 +132,28 @@ export interface TableRow {
   downloadedVersion: string;
   status: 'new' | 'update' | 'current';
   type: 'npm' | 'download';
+  category: 'tool' | 'vscode-extension';
 }
 
-export function renderTable(rows: TableRow[]): void {
-  // Calculate dynamic column widths
-  const colWidths = {
+interface ColWidths {
+  tool: number;
+  latest: number;
+  downloaded: number;
+  status: number;
+  type: number;
+}
+
+function calculateColWidths(rows: TableRow[]): ColWidths {
+  return {
     tool: Math.max(4, ...rows.map(r => r.displayName.length)) + 2,
     latest: Math.max(6, ...rows.map(r => r.version.length)) + 2,
     downloaded: Math.max(10, ...rows.map(r => r.downloadedVersion.length)) + 2,
     status: 8,
     type: 4,
   };
+}
 
-  const totalWidth = colWidths.tool + colWidths.latest + colWidths.downloaded + colWidths.status + colWidths.type + 2;
-
-  // Header
+function renderTableHeader(colWidths: ColWidths): void {
   console.log(chalk.bold(
     '  ' +
     'Tool'.padEnd(colWidths.tool) +
@@ -155,38 +162,74 @@ export function renderTable(rows: TableRow[]): void {
     'Status'.padEnd(colWidths.status) +
     'Type'
   ));
+  const totalWidth = colWidths.tool + colWidths.latest + colWidths.downloaded + colWidths.status + colWidths.type + 2;
   console.log(chalk.gray('─'.repeat(totalWidth)));
+}
 
-  // Rows
-  for (const row of rows) {
-    // Pad plain text BEFORE applying colors (chalk adds invisible ANSI codes)
-    let statusText: string;
-    let statusColored: string;
-    switch (row.status) {
-      case 'new':
-        statusText = 'NEW'.padEnd(colWidths.status);
-        statusColored = chalk.blue(statusText);
-        break;
-      case 'update':
-        statusText = 'UPDATE'.padEnd(colWidths.status);
-        statusColored = chalk.yellow(statusText);
-        break;
-      case 'current':
-        statusText = '✓'.padEnd(colWidths.status);
-        statusColored = chalk.green(statusText);
-        break;
-    }
-    const typeStr = row.type === 'npm' ? chalk.magenta('npm') : chalk.cyan('wget');
-
-    console.log(
-      '  ' +
-      row.displayName.padEnd(colWidths.tool) +
-      row.version.padEnd(colWidths.latest) +
-      row.downloadedVersion.padEnd(colWidths.downloaded) +
-      statusColored +
-      typeStr
-    );
+function renderTableRow(row: TableRow, colWidths: ColWidths): void {
+  let statusText: string;
+  let statusColored: string;
+  switch (row.status) {
+    case 'new':
+      statusText = 'NEW'.padEnd(colWidths.status);
+      statusColored = chalk.blue(statusText);
+      break;
+    case 'update':
+      statusText = 'UPDATE'.padEnd(colWidths.status);
+      statusColored = chalk.yellow(statusText);
+      break;
+    case 'current':
+      statusText = '✓'.padEnd(colWidths.status);
+      statusColored = chalk.green(statusText);
+      break;
   }
+  const typeStr = row.type === 'npm' ? chalk.magenta('npm') : chalk.cyan('wget');
+
+  console.log(
+    '  ' +
+    row.displayName.padEnd(colWidths.tool) +
+    row.version.padEnd(colWidths.latest) +
+    row.downloadedVersion.padEnd(colWidths.downloaded) +
+    statusColored +
+    typeStr
+  );
+}
+
+function renderGroupHeader(title: string, colWidths: ColWidths): void {
+  const totalWidth = colWidths.tool + colWidths.latest + colWidths.downloaded + colWidths.status + colWidths.type + 2;
+  console.log('');
+  console.log(chalk.bold.underline(`  ${title}`));
+  console.log(chalk.gray('─'.repeat(totalWidth)));
+}
+
+export function renderTable(rows: TableRow[]): void {
+  const colWidths = calculateColWidths(rows);
+
+  // Group rows by category
+  const tools = rows.filter(r => r.category === 'tool');
+  const extensions = rows.filter(r => r.category === 'vscode-extension');
+
+  // Render tools first
+  if (tools.length > 0) {
+    renderTableHeader(colWidths);
+    for (const row of tools) {
+      renderTableRow(row, colWidths);
+    }
+  }
+
+  // Render VSCode extensions as a separate group
+  if (extensions.length > 0) {
+    renderGroupHeader('VSCode Extensions', colWidths);
+    for (const row of extensions) {
+      renderTableRow(row, colWidths);
+    }
+  }
+}
+
+function isVscodeExtension(tool: VersionsJsonTool): boolean {
+  if (isNpmTool(tool)) return false;
+  // Check if filename ends with .vsix
+  return tool.filename.toLowerCase().endsWith('.vsix');
 }
 
 export async function promptToolSelection(
@@ -199,24 +242,30 @@ export async function promptToolSelection(
   console.log(chalk.bold(`\nrelease-radar-cli`));
   console.log(chalk.gray(`Last updated: ${new Date(generatedAt).toLocaleString()}\n`));
 
-  // Convert to table rows and display
-  const rows: TableRow[] = choices.map(choice => ({
-    displayName: choice.displayName,
-    version: choice.version,
-    downloadedVersion: choice.downloadedVersion ?? '-',
-    status: choice.status,
-    type: choice.type === 'npm' ? 'npm' : 'download',
+  // Convert to table rows with category and display
+  const rows: TableRow[] = tools.map((tool, i) => ({
+    displayName: choices[i].displayName,
+    version: choices[i].version,
+    downloadedVersion: choices[i].downloadedVersion ?? '-',
+    status: choices[i].status,
+    type: choices[i].type === 'npm' ? 'npm' : 'download',
+    category: isVscodeExtension(tool) ? 'vscode-extension' : 'tool',
   }));
 
   renderTable(rows);
   console.log('');
+
+  // Sort choices to match displayed order (tools first, then extensions)
+  const toolChoices = choices.filter((_, i) => !isVscodeExtension(tools[i]));
+  const extensionChoices = choices.filter((_, i) => isVscodeExtension(tools[i]));
+  const sortedChoices = [...toolChoices, ...extensionChoices];
 
   const { selected } = await inquirer.prompt([
     {
       type: 'checkbox',
       name: 'selected',
       message: 'Select tools to download:',
-      choices: choices.map((choice) => ({
+      choices: sortedChoices.map((choice) => ({
         name: `${choice.displayName} ${choice.version}`,
         value: choice,
         checked: choice.status !== 'current',

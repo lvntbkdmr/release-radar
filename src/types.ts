@@ -10,8 +10,12 @@ export interface ToolConfig {
   customFetcher?: string;  // which custom fetcher to use: 'vscode' | 'claude-cli' | 'cmake'
 }
 
+export type ScheduleMode = 'interval' | 'daily';
+
 export interface Config {
   checkIntervalHours: number;
+  scheduleMode?: ScheduleMode;      // 'interval' (default) or 'daily'
+  dailyCheckTime?: string;          // HH:MM format, e.g., "06:00"
   tools: ToolConfig[];
 }
 

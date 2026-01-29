@@ -115,13 +115,16 @@ describe('Checker', () => {
 
   describe('Asset mirroring', () => {
     let mockAssetMirror: {
-      mirror: ReturnType<typeof vi.fn>;
+      mirrorBatch: ReturnType<typeof vi.fn>;
     };
     let downloadsConfig: DownloadsConfig;
 
     beforeEach(() => {
       mockAssetMirror = {
-        mirror: vi.fn().mockResolvedValue({ success: true, downloadUrl: 'github.com/test/url' })
+        mirrorBatch: vi.fn().mockResolvedValue({
+          tag: 'batch-2026-01-29-120000',
+          results: new Map([['VSCode', { success: true, downloadUrl: 'github.com/test/url' }]])
+        })
       };
       downloadsConfig = {
         'VSCode': {
@@ -154,12 +157,14 @@ describe('Checker', () => {
 
       await checkerWithMirror.checkAll();
 
-      expect(mockAssetMirror.mirror).toHaveBeenCalledWith(
-        'VSCode',
-        '1.96.0',
-        { sourceUrl: 'https://update.code.visualstudio.com/latest/win32-x64/stable' },
-        'VSCode-{{VERSION}}-win-x64.msi'
-      );
+      expect(mockAssetMirror.mirrorBatch).toHaveBeenCalledWith([
+        {
+          toolName: 'VSCode',
+          version: '1.96.0',
+          config: { sourceUrl: 'https://update.code.visualstudio.com/latest/win32-x64/stable' },
+          filenameTemplate: 'VSCode-{{VERSION}}-win-x64.msi'
+        }
+      ]);
       expect(mockStorage.setMirrorUrl).toHaveBeenCalledWith('VSCode', 'github.com/test/url');
     });
 
@@ -178,7 +183,8 @@ describe('Checker', () => {
 
       await checkerWithMirror.checkAll();
 
-      expect(mockAssetMirror.mirror).not.toHaveBeenCalled();
+      // mirrorBatch should not be called when no items have mirror config
+      expect(mockAssetMirror.mirrorBatch).not.toHaveBeenCalled();
     });
 
     it('does not mirror when version unchanged', async () => {
@@ -196,12 +202,15 @@ describe('Checker', () => {
 
       await checkerWithMirror.checkAll();
 
-      expect(mockAssetMirror.mirror).not.toHaveBeenCalled();
+      expect(mockAssetMirror.mirrorBatch).not.toHaveBeenCalled();
     });
 
     it('continues if mirror fails', async () => {
       const vscodeTool: ToolConfig = { name: 'VSCode', type: 'custom', customFetcher: 'vscode' };
-      mockAssetMirror.mirror.mockResolvedValue({ success: false, error: 'network error' });
+      mockAssetMirror.mirrorBatch.mockResolvedValue({
+        tag: 'batch-2026-01-29-120000',
+        results: new Map([['VSCode', { success: false, error: 'network error' }]])
+      });
 
       const checkerWithMirror = new Checker(
         [vscodeTool],

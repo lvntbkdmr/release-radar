@@ -11,9 +11,24 @@ export interface MirrorResult {
   error?: string;
 }
 
+export interface MirrorItem {
+  toolName: string;
+  version: string;
+  config: MirrorConfig;
+  filenameTemplate: string;
+}
+
+export interface BatchMirrorResult {
+  tag: string;
+  results: Map<string, MirrorResult>;
+}
+
 export class AssetMirror {
   private repo = 'lvntbkdmr/apps';
 
+  /**
+   * Mirror a single tool (legacy method, still used for /mirror command)
+   */
   async mirror(
     toolName: string,
     version: string,
@@ -58,9 +73,101 @@ export class AssetMirror {
     }
   }
 
+  /**
+   * Mirror multiple tools into a single batch release
+   */
+  async mirrorBatch(items: MirrorItem[]): Promise<BatchMirrorResult> {
+    const tag = this.buildBatchTag();
+    const results = new Map<string, MirrorResult>();
+    const downloadedFiles: { path: string; filename: string }[] = [];
+
+    console.log(`[AssetMirror] Starting batch mirror for ${items.length} items, tag: ${tag}`);
+
+    // Download all files first
+    for (const item of items) {
+      const filename = this.applyVersion(item.filenameTemplate, item.version);
+      const downloadUrl = `github.com/${this.repo}/releases/download/${tag}/${filename}`;
+
+      try {
+        // Check if this specific file already exists in any release
+        const existingUrl = await this.findExistingAsset(item.toolName, item.version, filename);
+        if (existingUrl) {
+          console.log(`[AssetMirror] ${item.toolName} v${item.version} already mirrored, skipping`);
+          results.set(item.toolName, { success: true, downloadUrl: existingUrl });
+          continue;
+        }
+
+        console.log(`[AssetMirror] Getting source URL for ${item.toolName} v${item.version}...`);
+        const sourceUrl = await this.getSourceUrl(item.config, item.version);
+
+        const tempPath = join(tmpdir(), filename);
+        console.log(`[AssetMirror] Downloading to ${tempPath}...`);
+        await this.downloadFile(sourceUrl, tempPath);
+
+        downloadedFiles.push({ path: tempPath, filename });
+        results.set(item.toolName, { success: true, downloadUrl });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[AssetMirror] Failed to download ${item.toolName}: ${message}`);
+        results.set(item.toolName, { success: false, error: message });
+      }
+    }
+
+    // Create single release with all downloaded files
+    if (downloadedFiles.length > 0) {
+      try {
+        console.log(`[AssetMirror] Creating batch release ${tag} with ${downloadedFiles.length} assets...`);
+        await this.createBatchRelease(tag, downloadedFiles, items);
+        console.log(`[AssetMirror] Batch release created successfully`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[AssetMirror] Failed to create batch release: ${message}`);
+        // Mark all as failed if release creation fails
+        for (const file of downloadedFiles) {
+          const toolName = items.find(i => 
+            this.applyVersion(i.filenameTemplate, i.version) === file.filename
+          )?.toolName;
+          if (toolName) {
+            results.set(toolName, { success: false, error: message });
+          }
+        }
+      }
+
+      // Cleanup temp files
+      for (const file of downloadedFiles) {
+        if (existsSync(file.path)) {
+          unlinkSync(file.path);
+        }
+      }
+    }
+
+    return { tag, results };
+  }
+
   buildTag(toolName: string, version: string): string {
     const kebab = toolName.toLowerCase().replace(/\s+/g, '-');
     return `${kebab}-v${version}`;
+  }
+
+  buildBatchTag(): string {
+    const now = new Date();
+    const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const time = now.toTimeString().split(' ')[0].replace(/:/g, ''); // HHMMSS
+    return `batch-${date}-${time}`;
+  }
+
+  private async findExistingAsset(
+    toolName: string,
+    version: string,
+    filename: string
+  ): Promise<string | null> {
+    // Check legacy per-tool release first
+    const legacyTag = this.buildTag(toolName, version);
+    if (await this.releaseExists(legacyTag)) {
+      return `github.com/${this.repo}/releases/download/${legacyTag}/${filename}`;
+    }
+    // Could also search batch releases, but for simplicity we skip if not in legacy
+    return null;
   }
 
   async releaseExists(tag: string): Promise<boolean> {
@@ -165,6 +272,35 @@ export class AssetMirror {
       `gh release create "${tag}" "${filePath}#${filename}" ` +
       `--repo ${this.repo} --title "${title}" --notes "${notes}"`,
       { encoding: 'utf-8', timeout: 300000 }
+    );
+  }
+
+  private async createBatchRelease(
+    tag: string,
+    files: { path: string; filename: string }[],
+    items: MirrorItem[]
+  ): Promise<void> {
+    const date = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const title = `Updates ${date}`;
+    
+    // Build release notes listing all tools
+    const toolsList = items
+      .filter(item => files.some(f => f.filename === this.applyVersion(item.filenameTemplate, item.version)))
+      .map(item => `- ${item.toolName} ${item.version}`)
+      .join('\n');
+    const notes = `Mirrored for Nexus proxy access.\n\n**Included:**\n${toolsList}`;
+
+    // Build file arguments for gh release create
+    const fileArgs = files.map(f => `"${f.path}#${f.filename}"`).join(' ');
+
+    execSync(
+      `gh release create "${tag}" ${fileArgs} ` +
+      `--repo ${this.repo} --title "${title}" --notes "${notes}"`,
+      { encoding: 'utf-8', timeout: 600000 } // 10 minutes for multiple uploads
     );
   }
 }

@@ -1,5 +1,7 @@
 {
-  "checkIntervalHours": 1,
+  "checkIntervalHours": 6,
+  "scheduleMode": "daily",
+  "dailyCheckTime": "06:00",
   "tools": [
     {
       "name": "VSCode",
