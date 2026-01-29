@@ -74,6 +74,13 @@ export class AssetMirror {
   }
 
   /**
+   * Small delay to prevent buffer exhaustion on low-memory systems (RPi)
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
    * Mirror multiple tools into a single batch release
    */
   async mirrorBatch(items: MirrorItem[]): Promise<BatchMirrorResult> {
@@ -83,8 +90,9 @@ export class AssetMirror {
 
     console.log(`[AssetMirror] Starting batch mirror for ${items.length} items, tag: ${tag}`);
 
-    // Download all files first
-    for (const item of items) {
+    // Download all files first (with delays to prevent buffer exhaustion)
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       const filename = this.applyVersion(item.filenameTemplate, item.version);
       const downloadUrl = `github.com/${this.repo}/releases/download/${tag}/${filename}`;
 
@@ -106,10 +114,19 @@ export class AssetMirror {
 
         downloadedFiles.push({ path: tempPath, filename });
         results.set(item.toolName, { success: true, downloadUrl });
+
+        // Add delay between downloads to let buffers clear (except after last item)
+        if (i < items.length - 1) {
+          await this.sleep(1000);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`[AssetMirror] Failed to download ${item.toolName}: ${message}`);
         results.set(item.toolName, { success: false, error: message });
+        // Also add delay after failures
+        if (i < items.length - 1) {
+          await this.sleep(1000);
+        }
       }
     }
 
@@ -175,6 +192,7 @@ export class AssetMirror {
       execSync(`gh release view ${tag} --repo ${this.repo}`, {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
+        maxBuffer: 10 * 1024 * 1024,
       });
       return true;
     } catch {
@@ -216,7 +234,7 @@ export class AssetMirror {
       `-H 'Content-Type: application/json' ` +
       `--data '${query}'`;
 
-    const response = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
+    const response = execSync(cmd, { encoding: 'utf-8', timeout: 30000, maxBuffer: 10 * 1024 * 1024 });
     const data = JSON.parse(response);
 
     const versions = data.results?.[0]?.extensions?.[0]?.versions || [];
@@ -251,6 +269,7 @@ export class AssetMirror {
     execSync(`curl -sS -L -o "${destPath}" "${url}"`, {
       encoding: 'utf-8',
       timeout: 300000, // 5 minutes for large files
+      maxBuffer: 10 * 1024 * 1024,
     });
 
     if (!existsSync(destPath)) {
@@ -271,7 +290,7 @@ export class AssetMirror {
     execSync(
       `gh release create "${tag}" "${filePath}#${filename}" ` +
       `--repo ${this.repo} --title "${title}" --notes "${notes}"`,
-      { encoding: 'utf-8', timeout: 300000 }
+      { encoding: 'utf-8', timeout: 300000, maxBuffer: 10 * 1024 * 1024 }
     );
   }
 
@@ -300,7 +319,7 @@ export class AssetMirror {
     execSync(
       `gh release create "${tag}" ${fileArgs} ` +
       `--repo ${this.repo} --title "${title}" --notes "${notes}"`,
-      { encoding: 'utf-8', timeout: 600000 } // 10 minutes for multiple uploads
+      { encoding: 'utf-8', timeout: 600000, maxBuffer: 10 * 1024 * 1024 } // 10 minutes for multiple uploads
     );
   }
 }
