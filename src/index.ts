@@ -520,6 +520,19 @@ bot.onText(/\/mirrorall/, async (msg) => {
   }
 
   await bot.sendMessage(validatedChatId, message);
+
+  // Auto-publish CLI if mirroring succeeded and publisher is configured
+  if (successCount > 0 && cliPublisher.isConfigured()) {
+    const state = storage.load();
+    const mirrorUrls = storage.getAllMirrorUrls();
+    console.log(`[mirrorall] Auto-publishing CLI with ${Object.keys(mirrorUrls).length} mirror URLs`);
+    const publishResult = await cliPublisher.publish(state.versions, mirrorUrls);
+    if (publishResult.success) {
+      await bot.sendMessage(validatedChatId, `📦 CLI published: v${publishResult.version}`);
+    } else {
+      await bot.sendMessage(validatedChatId, `⚠️ CLI publish failed: ${publishResult.error}`);
+    }
+  }
 });
 
 bot.onText(/\/mirror(?:\s+(.+))?/, async (msg, match) => {
