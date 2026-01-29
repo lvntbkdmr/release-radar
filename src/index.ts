@@ -394,7 +394,8 @@ bot.onText(/\/generate/, async (msg) => {
   }
 
   const state = storage.load();
-  const versionsJson = generateVersionsJson(state.versions, downloadsConfig);
+  const mirrorUrls = storage.getAllMirrorUrls();
+  const versionsJson = generateVersionsJson(state.versions, downloadsConfig, mirrorUrls);
 
   const outputPath = join(DATA_DIR, 'cli-versions.json');
   writeFileSync(outputPath, JSON.stringify(versionsJson, null, 2));
@@ -406,8 +407,8 @@ bot.onText(/\/generate/, async (msg) => {
 });
 
 // Helper to format CLI preview
-function formatCliPreview(versions: Record<string, string>): string {
-  const versionsJson = generateVersionsJson(versions, downloadsConfig);
+function formatCliPreview(versions: Record<string, string>, mirrorUrls: Record<string, string> = {}): string {
+  const versionsJson = generateVersionsJson(versions, downloadsConfig, mirrorUrls);
   if (versionsJson.tools.length === 0) {
     return 'No tools configured in downloads.json';
   }
@@ -429,7 +430,8 @@ bot.onText(/\/clipreview/, async (msg) => {
   }
 
   const state = storage.load();
-  const preview = formatCliPreview(state.versions);
+  const mirrorUrls = storage.getAllMirrorUrls();
+  const preview = formatCliPreview(state.versions, mirrorUrls);
   await bot.sendMessage(validatedChatId, `📋 CLI Preview\n\n${preview}\n\nUse /publishcli to publish.`);
 });
 
@@ -443,7 +445,7 @@ bot.onText(/\/publishcli/, async (msg) => {
 
   const state = storage.load();
   const mirrorUrls = storage.getAllMirrorUrls();
-  const preview = formatCliPreview(state.versions);
+  const preview = formatCliPreview(state.versions, mirrorUrls);
   await bot.sendMessage(validatedChatId, `📦 Publishing CLI...\n\n${preview}`);
 
   const result = await cliPublisher.publish(state.versions, mirrorUrls);
