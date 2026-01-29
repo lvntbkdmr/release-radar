@@ -2,9 +2,9 @@
   "VSCode": {
     "displayName": "VS Code",
     "downloadUrl": "{{MIRROR_URL}}",
-    "filename": "VSCode-{{VERSION}}-win-x64.msi",
+    "filename": "VSCodeSetup-{{VERSION}}-x64.exe",
     "mirror": {
-      "sourceUrl": "https://update.code.visualstudio.com/latest/win32-x64/stable"
+      "sourceUrl": "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64"
     }
   },
   "Claude Code VSCode": {
