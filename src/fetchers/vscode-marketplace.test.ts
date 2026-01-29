@@ -44,4 +44,45 @@ describe('fetchVSCodeMarketplace', () => {
     await expect(fetchVSCodeMarketplace('nonexistent.extension'))
       .rejects.toThrow('Extension not found: nonexistent.extension');
   });
+
+  it('skips pre-release versions with flag', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        results: [{
+          extensions: [{
+            versions: [
+              {
+                version: '2026.1.2026012801',
+                properties: [{ key: 'Microsoft.VisualStudio.Code.PreRelease', value: 'true' }]
+              },
+              { version: '2026.0.0', properties: [] }
+            ]
+          }]
+        }]
+      })
+    });
+
+    const version = await fetchVSCodeMarketplace('ms-python.python');
+    expect(version).toBe('2026.0.0');
+  });
+
+  it('skips pre-release versions with long build numbers', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        results: [{
+          extensions: [{
+            versions: [
+              { version: '1.17.10291017' },  // Long build number = pre-release
+              { version: '1.16.0' }
+            ]
+          }]
+        }]
+      })
+    });
+
+    const version = await fetchVSCodeMarketplace('ms-python.vscode-python-envs');
+    expect(version).toBe('1.16.0');
+  });
 });
