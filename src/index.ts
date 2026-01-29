@@ -215,6 +215,41 @@ function saveConfig(): void {
 }
 
 // Bot commands
+bot.onText(/\/help/, async (msg) => {
+  if (msg.chat.id.toString() !== validatedChatId) return;
+
+  const help = `📖 *Available Commands*
+
+*Version Checking*
+/check - Check all tools for updates
+/status - Show tracked versions and schedule
+
+*Scheduling*
+/interval - Show current check interval
+/setinterval <hours> - Set check interval (1-24)
+/schedule - Show schedule mode and settings
+/setmode <interval|daily> - Set schedule mode
+/settime <HH:MM> - Set daily check time
+
+*CLI Publishing*
+/clipreview - Preview CLI contents
+/publishcli - Publish CLI to npm
+
+*Asset Mirroring*
+/mirrorall - Mirror all tools needing it
+/mirror <tool> [version] - Mirror single tool
+/mirror <tool> --force - Re-mirror existing
+
+*Maintenance*
+/generate - Generate versions.json locally
+/resetversion <tool> - Clear cached version
+/resetall - Clear all cached versions
+
+/help - Show this message`;
+
+  await bot.sendMessage(validatedChatId, help, { parse_mode: 'Markdown' });
+});
+
 bot.onText(/\/check/, async (msg) => {
   if (msg.chat.id.toString() !== validatedChatId) return;
 
