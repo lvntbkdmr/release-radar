@@ -142,6 +142,11 @@
       "name": "Material Icon Theme",
       "type": "github",
       "repo": "material-extensions/vscode-material-icon-theme"
+    },
+    {
+      "name": "Continue",
+      "type": "vscode-marketplace",
+      "extensionId": "Continue.continue"
     }
   ]
 }
