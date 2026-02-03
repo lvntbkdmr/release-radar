@@ -181,5 +181,14 @@
     "displayName": "Material Icon Theme",
     "downloadUrl": "github.com/material-extensions/vscode-material-icon-theme/releases/download/v{{VERSION}}/material-icon-theme-{{VERSION}}.vsix",
     "filename": "material-icon-theme-{{VERSION}}.vsix"
+  },
+  "Continue": {
+    "displayName": "Continue Extension",
+    "downloadUrl": "{{MIRROR_URL}}",
+    "filename": "continue-{{VERSION}}.vsix",
+    "mirror": {
+      "sourceUrl": "marketplace-api",
+      "extensionId": "Continue.continue"
+    }
   }
 }
