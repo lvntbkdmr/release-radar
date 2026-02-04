@@ -185,10 +185,11 @@
   "Continue": {
     "displayName": "Continue Extension",
     "downloadUrl": "{{MIRROR_URL}}",
-    "filename": "continue-{{VERSION}}.vsix",
+    "filename": "continue-{{VERSION}}-win32-x64.vsix",
     "mirror": {
       "sourceUrl": "marketplace-api",
-      "extensionId": "Continue.continue"
+      "extensionId": "Continue.continue",
+      "targetPlatform": "win32-x64"
     }
   }
 }
