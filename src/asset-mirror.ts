@@ -1,6 +1,6 @@
 // src/asset-mirror.ts
 import { execSync } from 'child_process';
-import { unlinkSync, existsSync } from 'fs';
+import { unlinkSync, existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import type { MirrorConfig } from './types.js';
@@ -253,12 +253,18 @@ export class AssetMirror {
       flags: 3,
     });
 
-    const cmd = `curl -sS 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery' ` +
+    // Write to temp file to avoid ENOBUFS on large responses (e.g. Continue has 10MB+ API response)
+    const tempFile = join(tmpdir(), `marketplace-${Date.now()}.json`);
+    const cmd = `curl -sS -o "${tempFile}" 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery' ` +
       `-H 'Accept: application/json; api-version=7.2-preview.1' ` +
       `-H 'Content-Type: application/json' ` +
       `--data '${query}'`;
 
-    const response = execSync(cmd, { encoding: 'utf-8', timeout: 30000, maxBuffer: 10 * 1024 * 1024 });
+    execSync(cmd, { timeout: 30000, stdio: 'ignore' });
+
+    const response = readFileSync(tempFile, 'utf-8');
+    unlinkSync(tempFile);
+
     const data = JSON.parse(response);
 
     const versions = data.results?.[0]?.extensions?.[0]?.versions || [];
@@ -291,9 +297,8 @@ export class AssetMirror {
 
   private async downloadFile(url: string, destPath: string): Promise<void> {
     execSync(`curl -sS -L -o "${destPath}" "${url}"`, {
-      encoding: 'utf-8',
       timeout: 300000, // 5 minutes for large files
-      maxBuffer: 10 * 1024 * 1024,
+      stdio: 'ignore', // Don't buffer output - prevents ENOBUFS on large downloads
     });
 
     if (!existsSync(destPath)) {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AssetMirror } from './asset-mirror.js';
 import { execSync } from 'child_process';
-import { existsSync, unlinkSync } from 'fs';
+import { existsSync, unlinkSync, readFileSync } from 'fs';
 
 vi.mock('child_process', () => ({
   execSync: vi.fn()
@@ -9,7 +9,8 @@ vi.mock('child_process', () => ({
 
 vi.mock('fs', () => ({
   existsSync: vi.fn(),
-  unlinkSync: vi.fn()
+  unlinkSync: vi.fn(),
+  readFileSync: vi.fn()
 }));
 
 describe('AssetMirror', () => {
@@ -81,13 +82,15 @@ describe('AssetMirror', () => {
       vi.mocked(execSync).mockImplementationOnce(() => {
         throw new Error('release not found');
       });
-      // 2. curl marketplace query succeeds
-      vi.mocked(execSync).mockReturnValueOnce(marketplaceResponse);
+      // 2. curl marketplace query writes to temp file (returns nothing)
+      vi.mocked(execSync).mockReturnValueOnce('');
       // 3. curl download succeeds
       vi.mocked(execSync).mockReturnValueOnce('');
       // 4. gh release create succeeds
       vi.mocked(execSync).mockReturnValueOnce('');
 
+      // readFileSync returns marketplace response from temp file
+      vi.mocked(readFileSync).mockReturnValueOnce(marketplaceResponse);
       vi.mocked(existsSync).mockReturnValue(true);
 
       const result = await mirror.mirror('Claude Code VSCode', '2.1.9', {
@@ -121,13 +124,15 @@ describe('AssetMirror', () => {
       vi.mocked(execSync).mockImplementationOnce(() => {
         throw new Error('release not found');
       });
-      // 2. curl marketplace query succeeds
-      vi.mocked(execSync).mockReturnValueOnce(marketplaceResponse);
+      // 2. curl marketplace query writes to temp file (returns nothing)
+      vi.mocked(execSync).mockReturnValueOnce('');
       // 3. curl download succeeds
       vi.mocked(execSync).mockReturnValueOnce('');
       // 4. gh release create succeeds
       vi.mocked(execSync).mockReturnValueOnce('');
 
+      // readFileSync returns marketplace response from temp file
+      vi.mocked(readFileSync).mockReturnValueOnce(marketplaceResponse);
       vi.mocked(existsSync).mockReturnValue(true);
 
       const result = await mirror.mirror('GitHub Theme', '1.2.3', {
