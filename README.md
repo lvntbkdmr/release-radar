@@ -1,4 +1,4 @@
-# ReleaseRadar
+# ReleaseRadar 
 
 A Node.js service that monitors tool/software versions and sends Telegram notifications when updates are detected.
 
